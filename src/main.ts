@@ -4,7 +4,7 @@ import VueI18n from 'vue-i18n'
 import VueClipboard from 'vue-clipboard2'
 import path from 'path'
 import log4js from 'log4js'
-import VueVirtualScroller from 'vue-virtual-scroller'
+import VueRx from 'vue-rx'
 
 import 'element-ui/lib/theme-chalk/index.css'
 import ElementLocale from 'element-ui/lib/locale'
@@ -18,6 +18,7 @@ import VueLog4js from './plugins/logPlugin/index'
 import { getOrCreateLogDir } from './utils/logger'
 import logConfig from './plugins/logPlugin/logConfig.json'
 import useConnection, { initOptionModel } from './database/useConnection'
+import VueMarkdown from 'vue-markdown'
 
 const { ConnectionInit } = useConnection()
 // Init typeORM connection before Vue APP start, after this DI services are available.
@@ -35,7 +36,8 @@ ConnectionInit({ doMigrations: false, undoMigrations: false } as initOptionModel
   Vue.use(VueI18n)
   Vue.use(VueClipboard)
   Vue.use(VueLog4js, config)
-  Vue.use(VueVirtualScroller)
+  Vue.use(VueRx)
+  Vue.use(VueMarkdown, { prism: require('prismjs/components/prism-core') })
 
   const locale: Language = store.state.app.currentLang
   const vueI18n: VueI18n = new VueI18n({

@@ -6,14 +6,14 @@
 
       <el-divider></el-divider>
 
-      <el-row class="settings-item" type="flex" justify="space-between">
+      <el-row class="settings-item" type="flex" justify="space-between" align="middle">
         <el-col :span="20">
           <label>{{ $t('settings.language') }}</label>
         </el-col>
         <el-col :span="4">
           <el-select
             class="settings-options"
-            v-model="currentLang"
+            :value="currentLang"
             size="mini"
             @change="handleSelectChange('lang', $event)"
           >
@@ -27,10 +27,105 @@
 
       <el-row class="settings-item" type="flex" justify="space-between">
         <el-col :span="20">
+          <label>{{ $t('settings.autoResub') }}</label>
+          <el-tooltip
+            placement="top"
+            :effect="currentTheme !== 'light' ? 'light' : 'dark'"
+            :open-delay="500"
+            :content="$t('settings.autoResubDesc')"
+          >
+            <a href="javascript:;" class="icon-oper">
+              <i class="el-icon-warning-outline"></i>
+            </a>
+          </el-tooltip>
+        </el-col>
+        <el-col :span="4">
+          <el-switch
+            :value="autoResub"
+            active-color="#13ce66"
+            inactive-color="#A2A9B0"
+            @change="handleAutoResubSwitchChange"
+          >
+          </el-switch>
+        </el-col>
+      </el-row>
+
+      <el-divider></el-divider>
+
+      <el-row class="settings-item" type="flex" justify="space-between">
+        <el-col :span="20">
+          <label>{{ $t('settings.autoScroll') }}</label>
+          <el-tooltip
+            placement="top"
+            :effect="currentTheme !== 'light' ? 'light' : 'dark'"
+            :open-delay="500"
+            :content="$t('settings.autoScrollDesc')"
+          >
+            <a href="javascript:;" class="icon-oper">
+              <i class="el-icon-warning-outline"></i>
+            </a>
+          </el-tooltip>
+        </el-col>
+        <el-col :span="4">
+          <el-switch
+            :value="autoScroll"
+            active-color="#13ce66"
+            inactive-color="#A2A9B0"
+            @change="handleAutoScrollSwitchChange"
+          >
+          </el-switch>
+        </el-col>
+      </el-row>
+
+      <template v-if="autoScroll">
+        <el-divider></el-divider>
+
+        <el-row class="settings-item" type="flex" justify="space-between" align="middle">
+          <el-col :span="18">
+            <label>{{ $t('settings.autoScrollInterval') }}</label>
+          </el-col>
+          <el-col :span="4">
+            <el-input-number size="mini" :value="autoScrollInterval" :min="0" @change="handleAutoScrollIntervalChange">
+            </el-input-number>
+          </el-col>
+        </el-row>
+      </template>
+
+      <el-divider></el-divider>
+
+      <el-row class="settings-item" type="flex" justify="space-between">
+        <el-col :span="20">
+          <label>{{ $t('settings.multiTopics') }}</label>
+          <el-tooltip
+            placement="top"
+            :effect="currentTheme !== 'light' ? 'light' : 'dark'"
+            :open-delay="500"
+            :content="$t('settings.multiTopicsDesc')"
+          >
+            <a href="javascript:;" class="icon-oper">
+              <i class="el-icon-warning-outline"></i>
+            </a>
+          </el-tooltip>
+        </el-col>
+        <el-col :span="4">
+          <el-switch
+            :value="multiTopics"
+            active-color="#13ce66"
+            inactive-color="#A2A9B0"
+            @change="handleMultiTopicsSwitchChange"
+          >
+          </el-switch>
+        </el-col>
+      </el-row>
+
+      <el-divider></el-divider>
+
+      <el-row class="settings-item" type="flex" justify="space-between" align="middle">
+        <el-col :span="20">
           <label>{{ $t('settings.maxReconnectTimes') }}</label>
         </el-col>
         <el-col :span="4">
-          <el-input-number size="mini" v-model="maxReconnectTimes" :min="1" @change="handleInputChage">
+          <el-input-number size="mini" :value="maxReconnectTimes" :min="1" @change="handleInputChage">
           </el-input-number>
         </el-col>
       </el-row>
@@ -43,14 +138,14 @@
 
       <el-divider></el-divider>
 
-      <el-row class="settings-item" type="flex" justify="space-between">
+      <el-row class="settings-item" type="flex" justify="space-between" align="middle">
         <el-col :span="20">
           <label>{{ $t('settings.theme') }}</label>
         </el-col>
         <el-col :span="4">
           <el-select
             class="settings-options"
-            v-model="currentTheme"
+            :value="currentTheme"
             size="mini"
             @change="handleSelectChange('theme', $event)"
           >
@@ -62,25 +157,101 @@
 
       <el-divider></el-divider>
     </div>
+
+    <div class="settings-advanced">
+      <div class="settings-title">{{ $t('settings.advanced') }}</div>
+      <el-divider></el-divider>
+
+      <el-row class="settings-item" type="flex" justify="space-between" align="middle">
+        <el-col :span="20">
+          <label>{{ $t('settings.dataRecovery') }}</label>
+        </el-col>
+        <el-col :span="4">
+          <el-button
+            class="data-manager-btn"
+            type="primary"
+            size="mini"
+            icon="el-icon-upload2"
+            @click="handleImportData"
+          >
+          </el-button>
+        </el-col>
+      </el-row>
+      <el-divider></el-divider>
+
+      <el-row class="settings-item" type="flex" justify="space-between" align="middle">
+        <el-col :span="20">
+          <label>{{ $t('settings.dataBackup') }}</label>
+        </el-col>
+        <el-col :span="4">
+          <el-button
+            class="data-manager-btn"
+            type="primary"
+            size="mini"
+            icon="el-icon-printer"
+            @click="handleExportData"
+          >
+          </el-button>
+        </el-col>
+      </el-row>
+      <el-divider></el-divider>
+
+      <el-row class="settings-item" type="flex" justify="space-between" align="middle">
+        <el-col :span="20">
+          <label>{{ $t('settings.historyCleanup') }}</label>
+        </el-col>
+        <el-col :span="4">
+          <el-button
+            class="data-manager-btn"
+            type="danger"
+            size="mini"
+            icon="el-icon-delete"
+            @click="handleCleanupHistoryData"
+          >
+          </el-button>
+        </el-col>
+      </el-row>
+      <el-divider></el-divider>
+
+      <ImportData :visible.sync="showImportData" />
+      <ExportData :visible.sync="showExportData" />
+      <ClearUpHistoryData :visible.sync="showHistoryData" />
+    </div>
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator'
 import { Getter, Action } from 'vuex-class'
+import ImportData from '@/components/ImportData.vue'
+import ExportData from '@/components/ExportData.vue'
+import ClearUpHistoryData from '@/components/ClearUpHistoryData.vue'
 
-@Component
+@Component({
+  components: {
+    ImportData,
+    ExportData,
+    ClearUpHistoryData,
+  },
+})
 export default class Settings extends Vue {
   @Action('TOGGLE_THEME') private actionTheme!: (payload: { currentTheme: string }) => void
   @Action('TOGGLE_LANG') private actionLang!: (payload: { currentLang: string }) => void
   @Action('SET_MAX_RECONNECT_TIMES') private actionMaxReconnectTimes!: (payload: { maxReconnectTimes: number }) => void
-  @Getter('currentTheme') private getterTheme!: 'light' | 'dark' | 'night'
-  @Getter('currentLang') private getterLang!: Language
-  @Getter('maxReconnectTimes') private getterMaxReconnectTimes!: number
+  @Action('TOGGLE_AUTO_RESUB') private actionAutoResub!: (payload: { autoResub: boolean }) => void
+  @Action('TOGGLE_AUTO_SCROLL') private actionAutoScroll!: (payload: { autoScroll: boolean }) => void
+  @Action('SET_AUTO_SCROLL_INTERVAL') private actionAutoScrollInterval!: (payload: {
+    autoScrollInterval: number
+  }) => void
+  @Action('TOGGLE_MULTI_TOPICS') private actionToggleMultiTopics!: (payload: { multiTopics: boolean }) => void
+  @Getter('currentTheme') private currentTheme!: 'light' | 'dark' | 'night'
+  @Getter('currentLang') private currentLang!: Language
+  @Getter('maxReconnectTimes') private maxReconnectTimes!: number
+  @Getter('autoResub') private autoResub!: boolean
+  @Getter('autoScroll') private autoScroll!: boolean
+  @Getter('autoScrollInterval') private autoScrollInterval!: number
+  @Getter('multiTopics') private multiTopics!: boolean
 
-  private currentTheme: 'light' | 'dark' | 'night' = 'light'
-  private currentLang: Language = 'en'
-  private maxReconnectTimes = 10
   private langOptions: Options[] = [
     { label: '简体中文', value: 'zh' },
     { label: 'English', value: 'en' },
@@ -91,6 +262,10 @@ export default class Settings extends Vue {
     { label: 'Dark', value: 'dark' },
     { label: 'Night', value: 'night' },
   ]
+
+  private showImportData = false
+  private showExportData = false
+  private showHistoryData = false
 
   private handleSelectChange(type: 'lang' | 'theme', value: string | number | boolean): void {
     if (type === 'theme') {
@@ -103,14 +278,36 @@ export default class Settings extends Vue {
     }
   }
 
+  private handleAutoResubSwitchChange(value: boolean) {
+    this.actionAutoResub({ autoResub: value })
+  }
+
+  private handleAutoScrollSwitchChange(value: boolean) {
+    this.actionAutoScroll({ autoScroll: value })
+  }
+
+  private handleMultiTopicsSwitchChange(value: boolean) {
+    this.actionToggleMultiTopics({ multiTopics: value })
+  }
+
   private handleInputChage(value: number) {
     this.actionMaxReconnectTimes({ maxReconnectTimes: value })
   }
 
-  private created() {
-    this.currentTheme = this.getterTheme
-    this.currentLang = this.getterLang
-    this.maxReconnectTimes = this.getterMaxReconnectTimes
+  private handleAutoScrollIntervalChange(value: number) {
+    this.actionAutoScrollInterval({ autoScrollInterval: value })
+  }
+
+  private handleImportData() {
+    this.showImportData = true
+  }
+
+  private handleExportData() {
+    this.showExportData = true
+  }
+
+  private handleCleanupHistoryData() {
+    this.showHistoryData = true
   }
 }
 </script>
@@ -126,13 +323,18 @@ export default class Settings extends Vue {
   user-select: none;
 
   .settings-general,
-  .settings-appearance {
+  .settings-appearance,
+  .settings-advanced {
     max-width: 836px;
     margin: 0 auto;
   }
 
   .settings-general {
     margin-top: 30px;
+  }
+
+  [class$='general'],
+  [class$='appearance'] {
     margin-bottom: 80px;
   }
 
@@ -151,7 +353,8 @@ export default class Settings extends Vue {
     }
   }
 
-  .el-col-4 {
+  .el-col-4,
+  .el-col-6 {
     text-align: right;
   }
 
@@ -174,13 +377,29 @@ export default class Settings extends Vue {
 
   .el-input-number__increase,
   .el-input-number__decrease {
-    background: var(--color-bg-input_btn);
+    background: transparent;
   }
   .el-input-number__decrease {
     border-right: 1px solid var(--color-border-default);
   }
   .el-input-number__increase {
     border-left: 1px solid var(--color-border-default);
+  }
+  .el-input-number--mini .el-input__inner {
+    text-align: center;
+  }
+
+  i {
+    font-size: 16px;
+  }
+  .data-manager-btn {
+    width: 90px;
+  }
+  .icon-oper {
+    position: relative;
+    top: 1px;
+    left: 5px;
+    color: var(--color-text-default);
   }
 }
 </style>

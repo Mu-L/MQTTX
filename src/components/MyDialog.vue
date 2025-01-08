@@ -18,7 +18,7 @@
         :loading="confirmLoading"
         :disabled="btnDisabled"
         @click="confirmClick"
-        >{{ $t('common.confirm') }}
+        >{{ confirmBtnText === '' ? $t('common.confirm') : confirmBtnText }}
       </el-button>
     </div>
   </el-dialog>
@@ -37,6 +37,8 @@ export default class MyDialog extends Vue {
   @Prop({ default: false }) public visible!: boolean
   // Confirm button loading
   @Prop({ default: false }) public confirmLoading!: boolean
+  // Dialog confirm button text
+  @Prop({ default: '' }) public confirmBtnText!: string
   // Confirm button disabled status
   @Prop({ default: false }) public btnDisabled!: boolean
   // Dialog margin-top value
@@ -77,15 +79,6 @@ export default class MyDialog extends Vue {
 @import '~@/assets/scss/variable.scss';
 
 .my-dialog {
-  .el-dialog__header {
-    padding: 0 20px;
-    line-height: 56px;
-    border-bottom: 1px solid var(--color-border-default);
-    .el-dialog__title {
-      color: var(--color-text-title);
-      font-size: $font-size--subtitle;
-    }
-  }
   .el-dialog--center .el-dialog__body {
     padding: 32px 24px 0;
   }

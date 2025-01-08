@@ -20,13 +20,12 @@
                 </el-col>
                 <el-col :span="24">
                   <el-form-item :label="$t('connections.payloadFormatIndicator')" prop="payloadFormatIndicator">
-                    <el-checkbox
-                      style="width: 100%"
+                    <el-switch
                       size="mini"
                       v-model="MQTT5PropsForm.payloadFormatIndicator"
-                      border
-                      >{{ MQTT5PropsForm.payloadFormatIndicator ? 'true' : 'false' }}</el-checkbox
-                    >
+                      active-color="#13ce66"
+                      inactive-color="#A2A9B0"
+                    ></el-switch>
                   </el-form-item>
                 </el-col>
                 <el-col :span="24">
@@ -49,22 +48,12 @@
                 </el-col>
                 <el-col :span="24">
                   <el-form-item :label="$t('connections.responseTopic')" prop="responseTopic">
-                    <el-input
-                      placeholder="Response Topic"
-                      size="mini"
-                      v-model="MQTT5PropsForm.responseTopic"
-                      type="text"
-                    />
+                    <el-input size="mini" v-model="MQTT5PropsForm.responseTopic" type="text" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="24">
                   <el-form-item :label="$t('connections.correlationData')" prop="correlationData">
-                    <el-input
-                      placeholder="Correlation Data"
-                      size="mini"
-                      v-model="MQTT5PropsForm.correlationData"
-                      type="text"
-                    />
+                    <el-input size="mini" v-model="MQTT5PropsForm.correlationData" type="text" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="24">
@@ -75,13 +64,18 @@
                 </el-col>
               </el-row>
             </el-form>
-            <div class="meta-btn">
-              <el-button size="mini" class="meta-btn-reset" type="text" @click="showMetaCard = false">{{
+            <div class="dropdown-btn">
+              <el-button size="mini" class="dropdown-btn-reset" type="text" @click="showMetaCard = false">{{
                 $t('common.cancel')
               }}</el-button>
-              <el-button size="mini" class="meta-btn-submit" type="text" :loading="saveMetaLoading" @click="saveMeta">{{
-                $t('common.save')
-              }}</el-button>
+              <el-button
+                size="mini"
+                class="dropdown-btn-submit"
+                type="text"
+                :loading="saveMetaLoading"
+                @click="saveMeta"
+                >{{ $t('common.save') }}</el-button
+              >
             </div>
           </el-card>
         </div>
@@ -89,18 +83,18 @@
     </div>
     <div class="publish-header">
       <div class="publish-metadata">
-        <span class="publish-label">Payload: </span>
         <el-select class="payload-select" size="mini" v-model="payloadType">
-          <el-option v-for="(type, index) in payloadOptions" :key="index" :value="type"> </el-option>
+          <el-option-group :label="$t('connections.publishPayloadEncodedBy')">
+            <el-option v-for="(type, index) in payloadOptions" :key="index" :label="type" :value="type"> </el-option>
+          </el-option-group>
         </el-select>
-        <span class="publish-label">QoS: </span>
         <el-select class="qos-select" size="mini" v-model="msgRecord.qos">
-          <el-option v-for="qos in [0, 1, 2]" :key="qos" :label="qos" :value="qos">
+          <el-option v-for="qos in [0, 1, 2]" :key="qos" :label="`QoS ${qos}`" :value="qos">
             <span style="float: left">{{ qos }}</span>
             <span style="float: right; color: #8492a6; margin-left: 12px">{{ $t(`connections.qos${qos}`) }}</span>
           </el-option>
         </el-select>
-        <el-checkbox class="retain-block" v-model="msgRecord.retain" label="Retain" border size="mini"></el-checkbox>
+        <el-checkbox class="retain-checkbox" v-model="msgRecord.retain" label="Retain" border size="mini"></el-checkbox>
         <el-tooltip
           placement="top"
           :disabled="mqtt5PropsEnable"
@@ -113,7 +107,7 @@
               type="outline"
               plain
               :disabled="!mqtt5PropsEnable"
-              :class="['meta-block', showMetaCard ? 'meta-block-active' : '']"
+              :class="['dropdown-btn', showMetaCard ? 'dropdown-btn-active' : '']"
               @click="changeVisable"
               label="Meta"
               size="mini"
@@ -122,37 +116,53 @@
             </el-button>
           </el-badge>
         </el-tooltip>
+        <el-dropdown class="actions-dropdown" placement="top" trigger="click" @command="handleActionCommand">
+          <el-button class="dropdown-btn actions-btn" type="outline" plain size="mini" icon="el-icon-caret-top">
+          </el-button>
+          <el-dropdown-menu class="connection-oper-item" slot="dropdown">
+            <el-dropdown-item command="clearRetainedMessage" :disabled="!clientConnected">
+              <i class="iconfont icon-delete"></i>{{ $t('connections.clearRetainedMessage') }}
+            </el-dropdown-item>
+            <el-dropdown-item command="timedMessage" :disabled="!clientConnected || sendTimeId !== null">
+              <i class="iconfont icon-timed-message"></i>{{ $t('connections.timedMessage') }}
+            </el-dropdown-item>
+          </el-dropdown-menu>
+        </el-dropdown>
       </div>
-      <el-input
-        class="publish-topic-input"
-        placeholder="Topic"
-        v-model="msgRecord.topic"
-        @focus="handleInputFoucs"
-        @blur="handleInputBlur"
-      >
-      </el-input>
-      <el-select
-        class="header-select"
-        popper-class="header-select--popper"
-        v-model="headerValue"
-        placeholder=""
-        size="mini"
-        @change="handleHeaderChange"
-      >
-        <el-option
-          class="header-option"
-          v-for="item in headersHistory"
-          :key="item.id"
-          :label="item.label"
-          :value="item"
+      <div :class="['topic-input-contianer', topicRequired ? 'required' : '']">
+        <el-input
+          class="publish-topic-input"
+          placeholder="Topic"
+          v-model="msgRecord.topic"
+          @focus="handleInputFoucs"
+          @blur="handleInputBlur"
         >
-          <span style="float: left; width: 160px; overflow: hidden; text-overflow: ellipsis">{{ item.topic }}</span>
-          <span style="color: #8492a6; font-size: 12px; margin-left: 4px">QoS:{{ item.qos }}</span>
-          <span style="float: right; color: #8492a6; font-size: 13px; margin-left: 4px">
-            retain:{{ item.retain ? '1' : '0' }}
-          </span>
-        </el-option>
-      </el-select>
+        </el-input>
+        <el-select
+          class="header-select"
+          popper-class="header-select--popper"
+          v-model="headerValue"
+          placeholder=""
+          size="mini"
+          @change="handleHeaderChange"
+        >
+          <el-option
+            class="header-option"
+            v-for="item in headersHistory"
+            :key="item.id"
+            :label="item.label"
+            :value="item"
+          >
+            <span style="float: left; width: 160px; overflow: hidden; text-overflow: ellipsis" :title="item.topic">{{
+              item.topic
+            }}</span>
+            <span style="color: #8492a6; font-size: 12px; margin-left: 4px">QoS:{{ item.qos }}</span>
+            <span style="float: right; color: #8492a6; font-size: 13px; margin-left: 4px">
+              retain:{{ item.retain ? '1' : '0' }}
+            </span>
+          </el-option>
+        </el-select>
+      </div>
     </div>
     <div class="editor-container">
       <div
@@ -230,9 +240,10 @@ import { emptyToNull } from '@/utils/handleString'
 })
 export default class MsgPublish extends Vue {
   @Prop({ required: true }) public editorHeight!: number
-  @Prop({ required: true }) public subsVisible!: boolean
   @Prop({ default: false }) public disabled!: boolean
   @Prop({ default: false }) public mqtt5PropsEnable!: boolean
+  @Prop({ default: false }) public clientConnected!: boolean
+  @Prop({ default: null }) public sendTimeId!: number | null
 
   @Getter('currentTheme') private currentTheme!: Theme
 
@@ -244,18 +255,22 @@ export default class MsgPublish extends Vue {
 
   private saveMetaLoading = false
 
+  private topicRequired = false
+
+  private isValidProp(value: any) {
+    return value !== null && value !== undefined && value !== false
+  }
+
   private getHasMqtt5PropState() {
-    return (
-      Object.entries(this.MQTT5PropsForm).filter(([_, v]) => v !== null && v !== undefined && v !== false).length > 0
-    )
+    return Object.values(this.MQTT5PropsForm).some(this.isValidProp)
   }
 
   private async saveMeta() {
-    this.hasMqtt5Prop = this.getHasMqtt5PropState()
     this.saveMetaLoading = true
     await this.updatePushProp()
     this.saveMetaLoading = false
     this.showMetaCard = false
+    this.hasMqtt5Prop = this.getHasMqtt5PropState()
   }
 
   private changeVisable() {
@@ -279,7 +294,7 @@ export default class MsgPublish extends Vue {
     topic: '',
     payload: JSON.stringify({ msg: 'hello' }, null, 2),
   }
-  private msgRecord: MessageModel = _.cloneDeep(this.defaultMsgRecord)
+  public msgRecord: MessageModel = _.cloneDeep(this.defaultMsgRecord)
   private headerValue: HistoryMessageHeaderModel = {
     qos: this.msgRecord.qos,
     retain: this.msgRecord.retain,
@@ -287,22 +302,16 @@ export default class MsgPublish extends Vue {
   }
   private payloadLang = 'json'
   private payloadType: PayloadType = 'JSON'
-  private payloadOptions: PayloadType[] = ['Plaintext', 'Base64', 'JSON', 'Hex']
+  private payloadOptions: PayloadType[] = ['Plaintext', 'JSON', 'Base64', 'Hex', 'CBOR', 'MsgPack']
 
   @Watch('editorHeight')
   private handleHeightChanged() {
     this.handleLayout()
   }
-  @Watch('subsVisible')
-  private handleSubsChanged(val: boolean) {
-    setTimeout(() => {
-      this.handleLayout()
-    }, 500)
-  }
   @Watch('payloadType')
   private handleTypeChange(val: PayloadType, oldVal: PayloadType) {
     const { payload } = this.msgRecord
-    if (val === 'JSON') {
+    if (['CBOR', 'JSON', 'MsgPack'].includes(val)) {
       this.payloadLang = 'json'
     } else {
       this.payloadLang = 'plaintext'
@@ -310,7 +319,7 @@ export default class MsgPublish extends Vue {
     if (payload === '') {
       return
     }
-    convertPayload(payload, val, oldVal)
+    convertPayload(payload.toString(), val, oldVal)
       .then((res) => {
         this.msgRecord.payload = res
       })
@@ -330,25 +339,29 @@ export default class MsgPublish extends Vue {
   private handleHistoryIndexChange(val: number, lastval: number) {
     if (lastval !== val && val >= 0 && val < this.payloadsHistory.length) {
       this.msgRecord = Object.assign(this.msgRecord, this.payloadsHistory[val])
-      this.payloadType = this.payloadsHistory[val].payloadType
+      this.payloadType = this.payloadsHistory[val].payloadType as PayloadType
     }
   }
 
   /**
    * Notice:
-   * when we jump order by`creation page` <-> `connection page`,
-   * the monaco will not init or destroy, because we use the v-show to hidden Msgpublish componment.
-   * So we need to operate editor creation and destroy manually by listening on route.
-   * relative PR: https://github.com/emqx/MQTTX/pull/518 https://github.com/emqx/MQTTX/pull/446
+   *
+   * When we switch between the `creation page` and `connection page`, the Monaco editor is not initialized or destroyed.
+   * Instead, we use `v-show` to hide the `MsgPublish` component.
+   * Therefore, we need to manually create and destroy the editor by listening to the route.
+   *
+   * Relevant PRs:
+   * - https://github.com/emqx/MQTTX/pull/518
+   * - https://github.com/emqx/MQTTX/pull/446
    */
   @Watch('$route.params.id', { immediate: true, deep: true })
   private async handleIdChanged(to: string, from: string) {
     const editorRef = this.$refs.payloadEditor as Editor
     if (to && from === '0' && to !== '0') {
-      // Init the editor when rout jump from creation page
+      // Initialize the editor when the route jumps from the creation page
       editorRef.initEditor()
     } else if (from && from !== '0' && to === '0') {
-      // destroy the editor when rout jump to creation page
+      // Destroy the editor when the route jumps to the creation page
       editorRef.destroyEditor()
     }
     this.loadProperties()
@@ -368,7 +381,10 @@ export default class MsgPublish extends Vue {
     }
   }
 
-  // Notice: add editor creation and destroy manually export for it's father componment.
+  /**
+   * Manually create and destroy the editor for the parent component.
+   * Note: This function destroys the editor instance.
+   */
   public editorDestory() {
     const editorRef = this.$refs.payloadEditor as Editor
     editorRef.destroyEditor()
@@ -384,19 +400,52 @@ export default class MsgPublish extends Vue {
     this.MQTT5PropsSend = _.cloneDeep(this.MQTT5PropsForm)
     const propRecords = Object.entries(this.MQTT5PropsForm).filter(([_, v]) => v !== null && v !== undefined && v !== 0)
     const props = Object.fromEntries(propRecords)
-
-    const { messageService } = useServices()
-    return await messageService.addPushProp(props, this.$route.params.id)
+    const { connectionService } = useServices()
+    return await connectionService.addPushProp(props, this.$route.params.id)
   }
 
   private async send() {
     this.msgRecord.id = getMessageId()
     this.msgRecord.createAt = time.getNowDate()
     this.mqtt5PropsEnable && (this.msgRecord.properties = this.MQTT5PropsSend)
+    if (!this.clientConnected) {
+      this.$notify({
+        title: this.$tc('connections.notConnect'),
+        message: '',
+        type: 'error',
+        duration: 3000,
+        offset: 30,
+      })
+      return
+    }
+    if (!this.msgRecord.topic && !this.msgRecord?.properties?.topicAlias) {
+      this.topicRequired = true
+      this.$notify({
+        title: this.$tc('connections.topicRequired'),
+        message: '',
+        type: 'warning',
+        duration: 3000,
+        offset: 30,
+      })
+      return
+    }
+    if (this.msgRecord.topic.includes('+') || this.msgRecord.topic.includes('#')) {
+      this.$notify({
+        title: this.$tc('connections.topicCannotContain'),
+        message: '',
+        type: 'warning',
+        duration: 3000,
+        offset: 30,
+      })
+      return
+    }
     this.$emit('handleSend', this.msgRecord, this.payloadType, this.loadHistoryData)
   }
 
   private handleInputFoucs() {
+    if (this.topicRequired) {
+      this.topicRequired = false
+    }
     ipcRenderer.on('sendPayload', () => {
       this.send()
     })
@@ -404,6 +453,9 @@ export default class MsgPublish extends Vue {
   }
 
   private handleInputBlur() {
+    if (this.topicRequired) {
+      this.topicRequired = false
+    }
     ipcRenderer.removeAllListeners('sendPayload')
   }
 
@@ -412,17 +464,13 @@ export default class MsgPublish extends Vue {
     editorRef.editorLayout()
   }
 
-  private beforeDestroy() {
-    ipcRenderer.removeAllListeners('sendPayload')
-  }
-
   private async loadHistoryData(isNewPayload?: boolean, isLoadData?: boolean) {
     const { historyMessageHeaderService, historyMessagePayloadService } = useServices()
     const headersHistory = (await historyMessageHeaderService.getAll()) ?? []
     const payloadsHistory = (await historyMessagePayloadService.getAll()) ?? []
     const historyMsg = payloadsHistory[payloadsHistory.length - 1]
     if (historyMsg && isLoadData) {
-      this.payloadType = historyMsg.payloadType
+      this.payloadType = historyMsg.payloadType as PayloadType
     }
     this.headersHistory = headersHistory
     this.payloadsHistory = payloadsHistory
@@ -442,7 +490,7 @@ export default class MsgPublish extends Vue {
     )
     const headersHistoryIndex = this.payloadsHistory[this.historyIndex]
     if (headersHistoryIndex) {
-      this.payloadType = headersHistoryIndex.payloadType
+      this.payloadType = headersHistoryIndex.payloadType as PayloadType
     }
     this.loadProperties()
   }
@@ -450,8 +498,8 @@ export default class MsgPublish extends Vue {
   private async loadProperties() {
     this.MQTT5PropsForm = {}
     if (this.mqtt5PropsEnable) {
-      const { messageService } = useServices()
-      const pushProps = await messageService.getPushProp(this.$route.params.id)
+      const { connectionService } = useServices()
+      const pushProps = await connectionService.getPushProp(this.$route.params.id)
       if (pushProps) {
         this.MQTT5PropsForm = pushProps
         this.MQTT5PropsSend = _.cloneDeep(this.MQTT5PropsForm)
@@ -461,14 +509,14 @@ export default class MsgPublish extends Vue {
   }
 
   private formatJsonValue() {
-    const jsonValue = validFormatJson(this.msgRecord.payload)
-    if (jsonValue) {
-      this.msgRecord.payload = jsonValue
+    try {
+      let jsonValue: string | undefined = validFormatJson(this.msgRecord.payload.toString())
+      if (jsonValue) {
+        this.msgRecord.payload = jsonValue
+      }
+    } catch (error) {
+      this.$message.error((error as Error).toString())
     }
-  }
-
-  private created() {
-    this.loadData()
   }
 
   private decrease() {
@@ -487,6 +535,50 @@ export default class MsgPublish extends Vue {
   private handleClickOutSide() {
     this.showMetaCard = false
   }
+
+  private handleActionCommand(command: string) {
+    if (command === 'clearRetainedMessage') {
+      this.onClearRetainedMsgPublish()
+    } else if (command === 'timedMessage') {
+      this.$emit('handleSendTimedMessage')
+    }
+  }
+
+  private onClearRetainedMsgPublish() {
+    this.$confirm(
+      `${this.$tc('connections.clearRetainedMessageConfirm')} "${this.msgRecord.topic}"`,
+      this.$tc('common.warning'),
+      {
+        type: 'warning',
+      },
+    )
+      .then(() => {
+        this.msgRecord.payload = ''
+        this.msgRecord.retain = true
+        this.send()
+      })
+      .catch(() => {
+        // The user canceled the action
+      })
+  }
+
+  private created() {
+    this.loadData()
+  }
+
+  private mounted() {
+    ipcRenderer.on('insertCodeToEditor', (event: Event, code: string) => {
+      if (code) {
+        this.msgRecord.payload = code
+        this.$emit('onInsertedCode')
+      }
+    })
+  }
+
+  private beforeDestroy() {
+    ipcRenderer.removeAllListeners('sendPayload')
+    ipcRenderer.removeAllListeners('insertCodeToEditor')
+  }
 }
 </script>
 
@@ -499,27 +591,27 @@ export default class MsgPublish extends Vue {
   background: var(--color-bg-normal);
   transition: 0.3s height;
   border-top: 1px solid var(--color-border-default);
+  box-shadow: #00000010 0px -1px 4px;
   z-index: 10;
   .publish-top {
     position: absolute;
     transform: translate(0, -100%);
     width: 100%;
-    z-index: 11;
     .el-card.meta-card {
       padding: 10px;
       padding-bottom: 0px;
       margin: 4px;
       user-select: none;
-      .meta-btn {
+      .dropdown-btn {
         margin-top: 10px;
         text-align: right;
-        .meta-btn-reset {
+        .dropdown-btn-reset {
           color: var(--color-text-default);
           &:hover {
             color: var(--color-main-green);
           }
         }
-        .meta-btn-submit {
+        .dropdown-btn-submit {
           margin-right: 8px;
         }
       }
@@ -539,6 +631,23 @@ export default class MsgPublish extends Vue {
       }
     }
   }
+  .topic-input-contianer {
+    &.required {
+      .el-input.publish-topic-input {
+        .el-input__inner {
+          border-right: none !important;
+        }
+      }
+      .el-select {
+        .el-input__inner {
+          border-left: none !important;
+        }
+      }
+      .el-input__inner {
+        border: 1px solid var(--color-minor-red) !important;
+      }
+    }
+  }
   .publish-topic-input.el-input {
     width: calc(100% - 20px);
     vertical-align: top;
@@ -554,9 +663,6 @@ export default class MsgPublish extends Vue {
     display: inline-block;
     .el-input {
       @include topic-input__inner;
-      &.is-focus {
-        @include topic-input__inner;
-      }
     }
   }
   .editor-container {
@@ -595,23 +701,27 @@ export default class MsgPublish extends Vue {
       position: fixed;
       right: 16px;
       bottom: 10px;
-      background: var(--color-main-green);
+      background: var(--color-bg-btn-gradient);
       border-radius: 50%;
       text-align: center;
-      box-shadow: 0px 4px 6px 0px var(--color-shadow-sendbtn);
-      width: 26px;
-      height: 26px;
-      line-height: 26px;
+      box-shadow: #00000011 0px 1px 3px, #0000002e 0px 1px 2px;
+      width: 28px;
+      height: 28px;
+      line-height: 29px;
       .icon-send {
         font-size: 16px;
         color: var(--color-text-active);
+      }
+      &:active {
+        box-shadow: none;
       }
     }
   }
   .publish-metadata {
     background: var(--color-bg-normal);
-    padding: 0 16px;
+    padding: 0 13px;
     margin-top: 6px;
+    margin-bottom: 2px;
     .el-input__inner {
       padding: 4px 10px;
     }
@@ -624,12 +734,18 @@ export default class MsgPublish extends Vue {
       margin-right: 8px;
     }
     .qos-select {
-      width: 46px;
+      width: 76px;
     }
-    .retain-block {
+    .retain-checkbox {
       margin-left: 8px;
+      .el-checkbox__input {
+        line-height: 1px;
+      }
+      .el-checkbox__label {
+        padding-left: 8px;
+      }
     }
-    .meta-block {
+    .dropdown-btn {
       margin-left: 6px;
       &.el-button.is-disabled {
         background-color: transparent;
@@ -640,13 +756,16 @@ export default class MsgPublish extends Vue {
         border-color: var(--color-border-default);
         color: var(--color-text-default);
       }
-      &.meta-block-active {
+      &.dropdown-btn-active {
         color: var(--color-main-green);
         border-color: var(--color-main-green);
       }
     }
     .el-checkbox__inner {
       border-radius: 100%;
+    }
+    .actions-dropdown {
+      display: inline;
     }
   }
   .disabled-mask {

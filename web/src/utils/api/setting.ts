@@ -8,4 +8,19 @@ export const setSettings = (key: string, value: string | boolean | number): stri
   return db.set<string | boolean | number>(key, value)
 }
 
+export const importAllData = (data: string): void => {
+  localStorage.setItem('db', data)
+}
+
+export const getAllData = (): $TSFixed => {
+  return db.read().value()
+}
+
+export const cleanHistoryData = (): void => {
+  db.set('connections', [])
+  db.set('headersHistory', [])
+  db.set('payloadsHistory', [])
+  db.set('suggestConnections', [])
+}
+
 export default {}

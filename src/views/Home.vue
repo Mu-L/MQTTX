@@ -1,8 +1,10 @@
 <template>
-  <div class="home-view">
+  <DatabaseError v-if="connectDatabaseFailMessage" />
+  <div class="home-view" v-else>
     <Leftbar />
     <RouterView />
     <Ipc @setTheme="setTheme" @setLang="setLang" />
+    <Update v-if="updateActive" />
   </div>
 </template>
 
@@ -12,19 +14,24 @@ import { Getter, Action } from 'vuex-class'
 import { remote } from 'electron'
 import Ipc from '@/components/Ipc.vue'
 import Leftbar from '@/components/Leftbar.vue'
+import DatabaseError from '@/components/DatabaseError.vue'
 
 @Component({
   components: {
     Ipc,
     Leftbar,
+    Update: () => import('@/views/update/index.vue'),
+    DatabaseError,
   },
 })
 export default class Home extends Vue {
   @Getter('currentTheme') private getterTheme!: Theme
   @Getter('currentLang') private getterLang!: Language
   @Getter('syncOsTheme') private syncOsTheme!: boolean
+  @Getter('connectDatabaseFailMessage') private connectDatabaseFailMessage!: string
   @Action('TOGGLE_THEME') private actionTheme!: (payload: { currentTheme: string }) => void
   @Action('TOGGLE_LANG') private actionLang!: (payload: { currentLang: string }) => void
+  private updateActive: boolean = false
 
   private setTheme(theme: Theme): void {
     const { shouldUseDarkColors } = remote.nativeTheme
@@ -49,6 +56,9 @@ export default class Home extends Vue {
   private created() {
     this.setTheme(this.getterTheme)
     this.setLang(this.getterLang)
+    setTimeout(() => {
+      this.updateActive = true
+    }, 3000)
   }
 }
 </script>
@@ -67,10 +77,10 @@ export default class Home extends Vue {
   }
   .right-topbar {
     position: fixed;
-    left: 341px;
     right: 0;
-    z-index: 3;
+    z-index: 2;
     background: var(--color-bg-normal);
+    transition: all 0.4s;
   }
   .rightbar {
     margin-left: 81px;
@@ -79,7 +89,6 @@ export default class Home extends Vue {
     border-left: 1px solid var(--color-border-rightbar);
   }
   .right-content {
-    margin-left: 341px;
     height: 100%;
     background-color: var(--color-bg-primary);
   }

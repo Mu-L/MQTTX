@@ -1,5 +1,4 @@
 import { Notification } from 'element-ui'
-import { SSLPath, SSLContent } from '@/views/connections/types'
 
 export const getSSLFile = (sslPath: SSLPath): SSLContent | undefined => {
   const { ca, cert, key } = sslPath
@@ -11,8 +10,9 @@ export const getSSLFile = (sslPath: SSLPath): SSLContent | undefined => {
     }
     return res
   } catch (error) {
+    const err = error as Error
     Notification({
-      title: error.toString(),
+      title: err.toString(),
       message: '',
       type: 'error',
     })

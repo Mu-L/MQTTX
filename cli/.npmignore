@@ -9,3 +9,7 @@ tsconfig.json
 /src/
 /release/
 tsconfig.tsbuildinfo
+Dockerfile
+.dockerignore
+.prettierrc
+README-CN.md

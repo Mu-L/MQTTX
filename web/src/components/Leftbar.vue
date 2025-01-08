@@ -8,7 +8,7 @@
       </div>
       <div :class="[{ active: isConnection }, 'leftbar-item']">
         <a href="javascript:;" @click="routeToPage('/recent_connections')">
-          <i class="iconfont icon-connect"></i>
+          <i class="iconfont icon-connections"></i>
         </a>
       </div>
       <div :class="[{ active: isCreate }, 'leftbar-item']">
@@ -19,14 +19,19 @@
     </section>
 
     <section class="leftbar-bottom">
-      <div :class="[{ active: isAbout }, 'leftbar-item']">
-        <a href="javascript:;" @click="routeToPage('/about')">
-          <i class="iconfont icon-about"></i>
-        </a>
-      </div>
       <div :class="[{ active: isSettings }, 'leftbar-item']">
         <a href="javascript:;" @click="routeToPage('/settings')">
           <i class="iconfont icon-settings"></i>
+        </a>
+      </div>
+      <div :class="[{ active: isHelp }, 'leftbar-item']">
+        <a href="javascript:;" @click="routeToPage('/help')">
+          <i class="iconfont icon-mqtt"></i>
+        </a>
+      </div>
+      <div :class="[{ active: isAbout }, 'leftbar-item']">
+        <a href="javascript:;" @click="routeToPage('/about')">
+          <i class="iconfont icon-about"></i>
         </a>
       </div>
     </section>
@@ -55,6 +60,9 @@ export default class Leftbar extends Vue {
   }
   get isAbout(): boolean {
     return this.$route.path === '/about'
+  }
+  get isHelp(): boolean {
+    return this.$route.path === '/help'
   }
 
   private routeToPage(path: string) {

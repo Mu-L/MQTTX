@@ -3,8 +3,8 @@ const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin')
 process.env.VUE_APP_VERSION = require('./package.json').version
 
 module.exports = {
-  publicPath: '/online-mqtt-client/',
-  outputDir: 'dist/online-mqtt-client',
+  publicPath: process.env.BASE_URL,
+  outputDir: process.env.VUE_APP_OUTPUT_DIR,
   configureWebpack: {
     plugins: [
       new MonacoWebpackPlugin({
@@ -54,5 +54,18 @@ module.exports = {
         ],
       }),
     ],
+    module: {
+      rules: [
+        {
+          test: /\.mjs$/,
+          include: /node_modules/,
+          type: 'javascript/auto',
+        },
+        {
+          test: /\.md$/,
+          use: 'raw-loader',
+        },
+      ],
+    },
   },
 }

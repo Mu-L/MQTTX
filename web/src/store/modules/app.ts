@@ -1,38 +1,35 @@
 import Vue from 'vue'
-import { ConnectionModel } from '../../views/connections/types'
 import { loadSettings, setSettings } from '@/utils/api/setting'
 
 const TOGGLE_THEME = 'TOGGLE_THEME'
 const TOGGLE_LANG = 'TOGGLE_LANG'
 const TOGGLE_AUTO_CHECK = 'TOGGLE_AUTO_CHECK'
+const TOGGLE_AUTO_RESUB = 'TOGGLE_AUTO_RESUB'
+const TOGGLE_AUTO_SCROLL = 'TOGGLE_AUTO_SCROLL'
+const SET_AUTO_SCROLL_INTERVAL = 'SET_AUTO_SCROLL_INTERVAL'
 const SET_MAX_RECONNECT_TIMES = 'SET_MAX_RECONNECT_TIMES'
 const CHANGE_ACTIVE_CONNECTION = 'CHANGE_ACTIVE_CONNECTION'
 const REMOVE_ACTIVE_CONNECTION = 'REMOVE_ACTIVE_CONNECTION'
 const CHANGE_SUBSCRIPTIONS = 'CHANGE_SUBSCRIPTIONS'
 const SHOW_CLIENT_INFO = 'SHOW_CLIENT_INFO'
-const SHOW_SUBSCRIPTIONS = 'SHOW_SUBSCRIPTIONS'
 const UNREAD_MESSAGE_COUNT_INCREMENT = 'UNREAD_MESSAGE_COUNT_INCREMENT'
 const TOGGLE_WILL_MESSAGE_VISIBLE = 'TOGGLE_WILL_MESSAGE_VISIBLE'
 const TOGGLE_ADVANCED_VISIBLE = 'TOGGLE_ADVANCED_VISIBLE'
 const CHANGE_ALL_CONNECTIONS = 'CHANGE_ALL_CONNECTIONS'
+const TOGGLE_MULTI_TOPICS = 'TOGGLE_MULTI_TOPICS'
 
 const stateRecord: App = loadSettings()
-
-const getShowSubscriptions = (): boolean => {
-  const $showSubscriptions: string | null = localStorage.getItem('showSubscriptions')
-  if (!$showSubscriptions) {
-    return true
-  }
-  return JSON.parse($showSubscriptions)
-}
 
 const app = {
   state: {
     currentTheme: stateRecord.currentTheme || 'light',
     currentLang: stateRecord.currentLang || 'en',
     autoCheck: stateRecord.autoCheck,
+    autoResub: stateRecord.autoResub,
+    autoScroll: stateRecord.autoScroll,
+    autoScrollInterval: stateRecord.autoScrollInterval,
+    multiTopics: stateRecord.multiTopics,
     maxReconnectTimes: stateRecord.maxReconnectTimes || 10,
-    showSubscriptions: getShowSubscriptions(),
     showClientInfo: {},
     unreadMessageCount: {},
     activeConnection: {},
@@ -50,20 +47,33 @@ const app = {
     [TOGGLE_AUTO_CHECK](state: App, autoCheck: boolean) {
       state.autoCheck = autoCheck
     },
+    [TOGGLE_AUTO_RESUB](state: App, autoResub: boolean) {
+      state.autoResub = autoResub
+    },
+    [TOGGLE_AUTO_SCROLL](state: App, autoScroll: boolean) {
+      state.autoScroll = autoScroll
+    },
+    [SET_AUTO_SCROLL_INTERVAL](state: App, autoScrollInterval: number) {
+      state.autoScrollInterval = autoScrollInterval
+    },
+    [TOGGLE_MULTI_TOPICS](state: App, multiTopics: boolean) {
+      state.multiTopics = multiTopics
+    },
     [SET_MAX_RECONNECT_TIMES](state: App, maxReconnectTimes: number) {
       state.maxReconnectTimes = maxReconnectTimes
     },
     [CHANGE_ACTIVE_CONNECTION](state: App, payload: Client) {
-      const client = payload.client
-      const messages = payload.messages
-      if (state.activeConnection[payload.id]) {
-        state.activeConnection[payload.id].client = client
-        state.activeConnection[payload.id].messages = messages
+      const { id, client, messages } = payload
+      if (state.activeConnection[id]) {
+        // already exists activeConnection
+        Vue.set(state.activeConnection[id], 'client', client)
+        Vue.set(state.activeConnection[id], 'messages', messages)
       } else {
-        state.activeConnection[payload.id] = {
+        // new activeConnection
+        Vue.set(state.activeConnection, id, {
           client,
           messages,
-        }
+        })
       }
     },
     [REMOVE_ACTIVE_CONNECTION](state: App, id: string) {
@@ -76,10 +86,6 @@ const app = {
     },
     [SHOW_CLIENT_INFO](state: App, payload: ClientInfo) {
       state.showClientInfo[payload.id] = payload.showClientInfo
-    },
-    [SHOW_SUBSCRIPTIONS](state: App, payload: SubscriptionsVisible) {
-      state.showSubscriptions = payload.showSubscriptions
-      localStorage.setItem('showSubscriptions', JSON.stringify(state.showSubscriptions))
     },
     [UNREAD_MESSAGE_COUNT_INCREMENT](state: App, payload: UnreadMessage) {
       if (payload.unreadMessageCount !== undefined) {
@@ -118,6 +124,22 @@ const app = {
       setSettings('settings.autoCheck', payload.autoCheck)
       commit(TOGGLE_AUTO_CHECK, payload.autoCheck)
     },
+    TOGGLE_AUTO_RESUB({ commit }: any, payload: App) {
+      setSettings('settings.autoResub', payload.autoResub)
+      commit(TOGGLE_AUTO_RESUB, payload.autoResub)
+    },
+    TOGGLE_AUTO_SCROLL({ commit }: any, payload: App) {
+      setSettings('settings.autoScroll', payload.autoScroll)
+      commit(TOGGLE_AUTO_SCROLL, payload.autoScroll)
+    },
+    SET_AUTO_SCROLL_INTERVAL({ commit }: any, payload: App) {
+      setSettings('settings.autoScrollInterval', payload.autoScrollInterval)
+      commit(SET_AUTO_SCROLL_INTERVAL, payload.autoScrollInterval)
+    },
+    TOGGLE_MULTI_TOPICS({ commit }: any, payload: App) {
+      setSettings('settings.multiTopics', payload.multiTopics)
+      commit(TOGGLE_MULTI_TOPICS, payload.multiTopics)
+    },
     SET_MAX_RECONNECT_TIMES({ commit }: any, payload: App) {
       setSettings('settings.maxReconnectTimes', payload.maxReconnectTimes)
       commit(SET_MAX_RECONNECT_TIMES, payload.maxReconnectTimes)
@@ -133,9 +155,6 @@ const app = {
     },
     SHOW_CLIENT_INFO({ commit }: any, payload: App) {
       commit(SHOW_CLIENT_INFO, payload)
-    },
-    SHOW_SUBSCRIPTIONS({ commit }: any, payload: App) {
-      commit(SHOW_SUBSCRIPTIONS, payload)
     },
     UNREAD_MESSAGE_COUNT_INCREMENT({ commit }: any, payload: App) {
       commit(UNREAD_MESSAGE_COUNT_INCREMENT, payload)

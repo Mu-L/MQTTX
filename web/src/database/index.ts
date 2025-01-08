@@ -37,9 +37,16 @@ class DB {
           autoCheck: true,
           currentLang: 'en',
           currentTheme: 'light',
+          autoResub: true,
+          autoScroll: true,
+          multiTopics: true,
           maxReconnectTimes: 10,
         })
         .write()
+    }
+    // Set auto scroll interval to 1 second by default
+    if (!this.db.has('settings.autoScrollInterval').value()) {
+      this.db.set('settings.autoScrollInterval', 0).write()
     }
     // Set max reconnection times
     if (!this.db.get('settings.maxReconnectTimes').value()) {
@@ -60,6 +67,12 @@ class DB {
     }
     if (!this.db.has('suggestConnections').value()) {
       this.db.set('suggestConnections', []).write()
+    }
+    if (!this.db.has('payloadsHistory').value()) {
+      this.db.set('payloadsHistory', []).write()
+    }
+    if (!this.db.has('headersHistory').value()) {
+      this.db.set('headersHistory', []).write()
     }
   }
   // read() is to keep the data of the main process and the rendering process up to date.

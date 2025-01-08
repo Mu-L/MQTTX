@@ -67,7 +67,7 @@
           </el-form-item>
         </el-col>
         <el-col :span="8">
-          <el-form-item label="Clean Session">
+          <el-form-item :label="connection.mqttVersion === '5.0' ? 'Clean Start' : 'Clean Session'">
             <el-checkbox v-model="connection.clean" :disabled="isClientConnected" border>{{
               connection.clean ? 'true' : 'false'
             }}</el-checkbox>
@@ -76,10 +76,9 @@
         <el-col :span="24">
           <el-button
             v-if="!isClientConnected"
-            class="btn"
+            class="btn connect"
             icon="el-icon-caret-right"
-            plain
-            type="outline"
+            type="primary"
             size="mini"
             :loading="btnLoading"
             @click="connect"
@@ -90,8 +89,7 @@
             v-else
             class="btn disconnect"
             icon="el-icon-switch-button"
-            plain
-            type="outline"
+            type="danger"
             size="mini"
             :loading="btnLoading"
             @click="disconnect"
@@ -102,8 +100,7 @@
             v-if="!isClientConnected && btnLoading"
             class="disconnect cancel btn"
             icon="el-icon-close"
-            plain
-            type="outline"
+            type="danger"
             size="mini"
             @click="cancel"
           >
@@ -130,7 +127,6 @@ export default class ConnectionInfo extends Vue {
   @Prop({ required: true }) public titleName!: string
 
   @Getter('currentTheme') private theme!: Theme
-  @Getter('allConnections') private allConnections!: ConnectionModel[] | []
 
   private oldName = ''
 
@@ -150,7 +146,6 @@ export default class ConnectionInfo extends Vue {
         { required: true, message: this.$t('common.inputRequired') },
         { validator: this.validateName, trigger: 'blur' },
       ],
-      clientId: [{ required: true, message: this.$t('common.inputRequired') }],
     }
   }
 
@@ -178,7 +173,9 @@ export default class ConnectionInfo extends Vue {
   }
 
   private async validateName(rule: FormRule, name: string, callBack: NameCallBack) {
-    for (const oneConnection of this.allConnections) {
+    const { connectionService } = useServices()
+    const connections = (await connectionService.getAll()) ?? []
+    for (const oneConnection of connections) {
       if (name !== this.oldName && oneConnection.name === name) {
         callBack(this.$tc('connections.duplicateName'))
       }
@@ -192,10 +189,7 @@ export default class ConnectionInfo extends Vue {
       }
       const { connectionService } = useServices()
       if (this.connection.id) {
-        const res: ConnectionModel | undefined = await connectionService.updateWithCascade(
-          this.connection.id,
-          this.connection,
-        )
+        const res = await connectionService.update(this.connection.id, this.connection)
         if (res) {
           this.$emit('handleConnect', this.connection)
         }
@@ -279,15 +273,19 @@ export default class ConnectionInfo extends Vue {
       }
     }
     .el-button.btn {
-      margin-top: 10px;
+      margin-top: 6px;
+      margin-bottom: 4px;
       float: right;
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      box-shadow: #00000011 0px 1px 3px, #0000002e 0px 1px 2px;
+      &.connect {
+        background: var(--color-bg-btn-gradient);
+      }
     }
     .el-button.cancel {
       margin-right: 10px;
-    }
-    .el-button.disconnect {
-      color: var(--color-minor-red);
-      border-color: var(--color-minor-red);
     }
     .el-form-item.is-success .el-input__inner,
     .el-form-item.is-success .el-input__inner:focus,

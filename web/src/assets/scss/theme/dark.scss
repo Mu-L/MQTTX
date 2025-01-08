@@ -46,7 +46,6 @@ body.dark {
   --color-main-green: #34c388;
   --color-minor-green: #53daa2;
   --color-light-green: #ebf8f2;
-  --color-main-red: #e86aa6;
   --color-minor-red: #f56c6c;
   --color-light-red: #fcdee4;
   --color-main-grey: #323232;
@@ -56,8 +55,9 @@ body.dark {
   /* Border color */
   --color-border-default: #383838;
   --color-border-bold: #969696;
-  --color-shadow-card: #00000059;
-  --color-shadow-message: #1f1f1f;
+  --color-border-rightbar: #2f2f2f;
+  --color-border-left_metainfo: #676767;
+  --color-border-right_metainfo: #ffffff59;
 
   /* Shadow color */
   --color-shadow-leftlist: #00000061;

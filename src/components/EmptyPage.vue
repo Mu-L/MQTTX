@@ -1,5 +1,10 @@
 <template>
-  <div class="empty-page right-content">
+  <div
+    class="empty-page right-content"
+    :style="{
+      marginLeft: leftValue,
+    }"
+  >
     <div class="empty-page__block">
       <div>
         <img :src="imageSrc" alt="new connection" />
@@ -7,13 +12,25 @@
       <el-button class="primary-btn" icon="el-icon-plus" @click="clickMethod(false)">
         {{ btnTitle }}
       </el-button>
-      <p v-html="$t('common.cloud')"></p>
+      <i18n path="common.emqx" tag="p">
+        <template #emqx>
+          <a :href="emqxWebsite" target="_blank" rel="noopener noreferrer">EMQX</a>
+        </template>
+      </i18n>
+      <i18n path="common.cloud" tag="p">
+        <template #cloud>
+          <a :href="emqxCloudWebsite" target="_blank" rel="noopener noreferrer">EMQX Cloud</a>
+        </template>
+      </i18n>
     </div>
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator'
+import { Getter } from 'vuex-class'
+import gaCustomLinks from '@/utils/gaCustomLinks'
+import { LeftValues } from '@/utils/styles'
 
 @Component
 export default class EmptyPage extends Vue {
@@ -21,14 +38,34 @@ export default class EmptyPage extends Vue {
   @Prop({ required: true }) public name!: string
   @Prop() public clickMethod!: <T>() => T | void
 
+  @Getter('currentLang') private getterLang!: Language
+  @Getter('showConnectionList') private showConnectionList!: boolean
+
   get imageSrc(): string {
     return require(`../assets/images/${this.name}`)
+  }
+
+  get emqxCloudWebsite(): string {
+    return gaCustomLinks(this.getterLang).empty.EMQXCloud
+  }
+
+  get emqxWebsite(): string {
+    return gaCustomLinks(this.getterLang).empty.EMQX
+  }
+
+  get leftValue(): string {
+    return this.showConnectionList ? LeftValues.Show : LeftValues.Hide
   }
 }
 </script>
 
 <style lang="scss" scoped>
 .empty-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+
   .empty-page__block {
     .primary-btn {
       background: linear-gradient(134deg, #37dc85 0%, #35ca8d 100%);
@@ -39,9 +76,8 @@ export default class EmptyPage extends Vue {
       margin-bottom: 20px;
     }
     text-align: center;
-    padding-top: 30%;
     p {
-      margin: 32px auto;
+      margin: 24px auto;
       max-width: 650px;
     }
   }

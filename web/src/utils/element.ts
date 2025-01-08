@@ -24,7 +24,7 @@ import {
   Switch,
   Select,
   Option,
-  // OptionGroup,
+  OptionGroup,
   Button,
   // ButtonGroup,
   // Table,
@@ -42,14 +42,14 @@ import {
   // TabPane,
   // Tag,
   // Tree,
-  // Alert,
+  Alert,
   // Slider,
   // Icon,
   Row,
   Col,
   // Upload,
   // Progress,
-  // Badge,
+  Badge,
   Card,
   // Rate,
   // Steps,
@@ -95,7 +95,7 @@ export default (Vue: any) => {
   Vue.use(Switch)
   Vue.use(Select)
   Vue.use(Option)
-  // Vue.use(OptionGroup)
+  Vue.use(OptionGroup)
   Vue.use(Button)
   // Vue.use(ButtonGroup)
   // Vue.use(Table)
@@ -113,14 +113,14 @@ export default (Vue: any) => {
   // Vue.use(TabPane)
   // Vue.use(Tag)
   // Vue.use(Tree)
-  // Vue.use(Alert)
+  Vue.use(Alert)
   // Vue.use(Slider)
   // Vue.use(Icon)
   Vue.use(Row)
   Vue.use(Col)
   // Vue.use(Upload)
   // Vue.use(Progress)
-  // Vue.use(Badge)
+  Vue.use(Badge)
   Vue.use(Card)
   // Vue.use(Rate)
   // Vue.use(Steps)
@@ -141,7 +141,7 @@ export default (Vue: any) => {
 
   Vue.use(Loading.directive)
 
-  // Vue.prototype.$loading = Loading.service
+  Vue.prototype.$loading = Loading.service
   // Vue.prototype.$msgbox = MessageBox
   // Vue.prototype.$alert = MessageBox.alert
   Vue.prototype.$confirm = MessageBox.confirm

@@ -9,7 +9,7 @@
         <div class="about-content__header">
           <p class="version">{{ $t('common.version') }} v{{ version }}</p>
           <p class="help">
-            <a class="web-link" href="javascript:;" @click="checkUpdate">{{ $t('about.update') }}</a>
+            <a class="web-link" href="javascript:;" @click.prevent.stop.self="checkUpdate">{{ $t('about.update') }}</a>
             <a class="web-link" :href="releasesLink" target="_blank" rel="noopener noreferrer">
               {{ $t('about.releases') }}
             </a>
@@ -29,7 +29,7 @@
               <i class="iconfont icon-website"></i>
               {{ $t('about.web') }} →
             </el-button>
-            <el-button class="link-btn" type="primary" @click="goToLink(`${mqttxWebsite}/docs/faq`)">
+            <el-button class="link-btn" type="primary" @click="goToLink(faqLink)">
               <i class="iconfont icon-faq"></i>
               FAQ →
             </el-button>
@@ -46,12 +46,13 @@
           <div class="emq-logo">
             <img :src="emqLogoSrc" alt="emqx" width="40" />
             <span class="copyright">
-              &copy;2022 <a :href="emqWebsite" target="_blank" rel="noopener noreferrer">EMQ</a> Technologies Inc.
+              &copy;{{ fullYear }} <a :href="emqWebsite" target="_blank" rel="noopener noreferrer">EMQ</a> Technologies
+              Inc.
             </span>
           </div>
           <div class="follow-items">
             <a target="_blank" rel="noopener noreferrer" class="follow-link" href="https://twitter.com/EMQTech">
-              <i class="iconfont icon-ttww"></i>
+              <i class="iconfont icon-x"></i>
             </a>
             <a target="_blank" rel="noopener noreferrer" class="follow-link" href="https://discord.gg/xYGf3fQnES">
               <i class="iconfont icon-discord"></i>
@@ -62,7 +63,7 @@
             <el-popover v-if="getterLang === 'zh'" placement="top-start" width="30" trigger="click">
               <img class="emqx-wechat" src="@/assets/images/wx_qr_code.png" alt="qq" />
               <span class="follow-link" slot="reference">
-                <i class="iconfont icon-we-chat"></i>
+                <i class="iconfont icon-wechat"></i>
               </span>
             </el-popover>
           </div>
@@ -77,17 +78,19 @@ import { Component, Vue } from 'vue-property-decorator'
 import { Getter } from 'vuex-class'
 import { ipcRenderer } from 'electron'
 import version from '@/version'
+import gaCustomLinks from '@/utils/gaCustomLinks'
 
 @Component
 export default class About extends Vue {
   @Getter('currentTheme') private getterTheme!: Theme
   @Getter('currentLang') private getterLang!: Language
 
-  private baseUrl = 'https://www.emqx.com'
-  private utm = '?utm_source=mqttx&utm_medium=referral&utm_campaign='
-
   get version(): string {
     return version
+  }
+
+  get fullYear(): number {
+    return new Date().getFullYear()
   }
 
   get mqttxLogoSrc(): string {
@@ -105,35 +108,27 @@ export default class About extends Vue {
   }
 
   get emqWebsite(): string {
-    const lang = this.getterLang === 'zh' ? 'zh' : 'en'
-    return `${this.baseUrl}/${lang}${this.utm}mqttx-to-homepage`
+    return gaCustomLinks(this.getterLang).about.EMQ
   }
 
   get emqxCloudWebsite(): string {
-    const lang = this.getterLang === 'zh' ? 'zh' : 'en'
-    return `${this.baseUrl}/${lang}/cloud${this.utm}mqttx-to-cloud`
-  }
-
-  get emqxIoWebsite(): string {
-    const baseUrl = 'https://www.emqx.io/'
-    const lang = this.getterLang === 'zh' ? 'zh' : 'en'
-    if (lang === 'zh') {
-      return `${baseUrl}zh${this.utm}mqttx-to-broker`
-    }
-    return `${baseUrl}${this.utm}mqttx-to-broker`
+    return gaCustomLinks(this.getterLang).about.EMQXCloud
   }
 
   get mqttxWebsite(): string {
-    const link = 'https://mqttx.app'
-    return this.getterLang === 'zh' ? `${link}/zh` : link
+    return gaCustomLinks(this.getterLang).about.MQTTX
   }
 
   get releasesLink(): string {
-    return `${this.mqttxWebsite}/changelogs/v${version}`
+    return gaCustomLinks(this.getterLang).about.releases
+  }
+
+  get faqLink(): string {
+    return gaCustomLinks(this.getterLang).about.faq
   }
 
   private checkUpdate(): void {
-    ipcRenderer.send('checkUpdate')
+    ipcRenderer.send('clickUpdate')
   }
 
   private goToLink(url: string) {

@@ -1,109 +1,64 @@
-import { dialog, BrowserWindow } from 'electron'
 import axios from 'axios'
 import version from '@/version'
 import useServices from '@/database/useServices'
+import { compareVersions } from 'compare-versions'
 
-const { autoUpdater } = require('electron-updater')
 const Store = require('electron-store')
 const electronStore = new Store()
 
-const release = 'https://api.github.com/repos/emqx/MQTTX/releases/latest'
-let language: string = 'en'
-
-const isUpdate = (latest: string, current: string): boolean => {
-  const latestVersion: number[] = latest.split('.').map((item) => parseInt(item, 10))
-  const currentVersion: number[] = current.split('.').map((item) => parseInt(item, 10))
-  let update: boolean = false
-
-  for (let i: number = 0; i < 3; i++) {
-    if (currentVersion[i] < latestVersion[i]) {
-      update = true
-    }
-  }
-
-  return update
+export interface versionDetail {
+  version: string
+  detail: string
 }
 
-const autoDownload = (latest: string, language: string): void => {
-  const urlLang = language === 'zh' ? 'zh' : 'en'
-  const downloadUrl = `https://www.emqx.com/${urlLang}/downloads/MQTTX/${latest}`
-  autoUpdater.setFeedURL(downloadUrl)
-  autoUpdater.checkForUpdatesAndNotify()
-  autoUpdater.on('checking-for-update', () => {})
-  autoUpdater.on('update-available', () => {})
-  autoUpdater.on('update-not-available', () => {})
-  autoUpdater.on('error', () => {})
-  autoUpdater.on('download-progress', () => {})
-  autoUpdater.on('update-downloaded', () => {
-    electronStore.set('isShow', true)
-    dialog
-      .showMessageBox({
-        type: 'info',
-        title: 'New Version',
-        buttons: ['Download', 'No'],
-        message: `Update available: ${latest}`,
-      })
-      .then((res) => {
-        if (res.response === 0) {
-          // if selected yes
-          autoUpdater.quitAndInstall()
-        } else {
-          dialog.showMessageBox({
-            type: 'info',
-            message: 'Automatic update on do not shut down the computer immediately',
-          })
-        }
-      })
-  })
-}
-
-const updateChecker = async (isAuto: boolean = true): Promise<void | boolean> => {
-  const response = await axios.get(release)
+export const getCurrentLang = async (): Promise<string> => {
+  let language: string = 'en'
   const { settingService } = useServices()
   await settingService.set()
   const setting = await settingService.get()
   if (setting) {
     language = setting.currentLang
   }
-  if (response.status === 200) {
-    const latest: string = response.data.name
-    const isPrerelease: boolean = response.data.prerelease
-    if (latest && isUpdate(latest.slice(1, 6), version) && !isPrerelease) {
-      autoDownload(latest, language)
-    } else {
-      if (!isAuto) {
-        dialog.showMessageBox({
-          type: 'info',
-          title: '',
-          buttons: ['OK'],
-          message: 'There are currently no updates available.',
+  return language === 'zh' ? 'zh' : 'en'
+}
+
+const getUpdateDtail = async (current: string): Promise<versionDetail | null> => {
+  const tagsUrl = 'https://community-sites.emqx.com/api/v1/all_version?product=MQTTX'
+  try {
+    const tagsRes = await axios.request({
+      timeout: 5000,
+      method: 'GET',
+      url: tagsUrl,
+    })
+    if (tagsRes.status === 200) {
+      const tagsList: string[] = tagsRes.data.data
+      const latestTag: string = tagsList[0]
+      if (latestTag && compareVersions(latestTag.replace(/[^0-9.]/g, ''), version) > 0) {
+        const versionRes = await axios.request({
+          timeout: 5000,
+          method: 'GET',
+          url: `https://community-sites.emqx.com/api/v1/changelogs?product=MQTTX&version=${latestTag}`,
         })
+        if (latestTag && versionRes.status === 200) {
+          return {
+            version: latestTag,
+            detail: versionRes.data.data.changelog,
+          }
+        }
       }
     }
-  } else {
-    return false
+  } catch (e) {
+    // console.log(e)
   }
+  return null
 }
-//what's new window
-export async function createUpdateWindow() {
-  const updateWindow = new BrowserWindow({
-    width: 600,
-    height: 500,
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-      enableRemoteModule: true,
-    },
-  })
-  const { settingService } = useServices()
-  await settingService.set()
-  const setting = await settingService.get()
-  if (setting) {
-    language = setting.currentLang
+
+export const updateChecker = async (isAuto: boolean = true): Promise<void | versionDetail | boolean> => {
+  const currentVersion = `v${version}`
+  const updateDetail: versionDetail | null = await getUpdateDtail(currentVersion)
+  const language: string = await getCurrentLang()
+  if (updateDetail && (!isAuto || electronStore.get('isIgnore') !== updateDetail.version)) {
+    return updateDetail
   }
-  let link: string = 'https://mqttx.app'
-  link = language === 'zh' ? `${link}/zh` : link
-  updateWindow.loadURL(`${link}/changelogs/v${version}`)
-  electronStore.set('isShow', false)
+  return false
 }
-export default updateChecker

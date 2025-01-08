@@ -11,6 +11,8 @@ import HistoryMessageHeaderEntity from './models/HistoryMessageHeaderEntity'
 import HistoryMessagePayloadEntity from './models/HistoryMessagePayloadEntity'
 import HistoryConnectionEntity from './models/HistoryConnectionEntity'
 import WillEntity from './models/WillEntity'
+import CopilotEntity from './models/CopilotEntity'
+import TopicNodeEntity from './models/TopicNodeEntity'
 import { ConnectionOptions } from 'typeorm'
 import { initTable1629476510574 } from './migration/1629476510574-initTable'
 import { messages1630403733964 } from './migration/1630403733964-messages'
@@ -30,6 +32,23 @@ import { subscriptionIdentifier1639375963172 } from './migration/1639375963172-s
 import { syncOsTheme1639730106721 } from './migration/1639730106721-syncOsTheme'
 import { topicDisabled1640846307653 } from './migration/1640846307653-topicDisabled'
 import { reconnectPeriod1642321826532 } from './migration/1642321826532-reconnectPeriod'
+import { multiTopics1659668384878 } from './migration/1659668384878-multiTopics'
+import { autoScrollInterval1668415942736 } from './migration/1668415942736-autoScrollInterval'
+import { modifyDefaultValueOfAutoScrollInterval1668672504891 } from './migration/1668672504891-modifyDefaultValueOfAutoScrollInterval'
+import { removeAutoScroll1673603594888 } from './migration/1673603594888-removeAutoScroll'
+import { supportSchemas1688042450818 } from './migration/1688042450818-supportSchemas'
+import { saveScriptName1688449795669 } from './migration/1688449795669-saveScriptName'
+import { jsonHighlight1691071794840 } from './migration/1691071794840-jsonHighlight'
+import { ALPNProtocols1691817588169 } from './migration/1691817588169-ALPNProtocols'
+import { aiSettings1701761407723 } from './migration/1701761407723-aiSettings'
+import { aiTables1701936842016 } from './migration/1701936842016-aiTables'
+import { enableCopilot1703659148195 } from './migration/1703659148195-enableCopilot'
+import { logLevel1704941582350 } from './migration/1704941582350-logLevel'
+import { updatePayloadTypeToVarchar1630403733965 } from './migration/1705478422620-updatePayloadTypeToVarchar'
+import { supportOpenAIAPIHost1716044120271 } from './migration/1716044120271-supportOpenAIAPIHost'
+import { ignoreQoS0Message1724839386732 } from './migration/1724839386732-ignoreQoS0Message'
+import { changeDefaultLLMModel1727111519962 } from './migration/1727111519962-changeDefaultLLMModel'
+import { topicNodeTables1729246737362 } from './migration/1729246737362-topicNodeTables'
 
 const STORE_PATH = getAppDataPath('MQTTX')
 try {
@@ -67,6 +86,23 @@ const ORMConfig = {
     syncOsTheme1639730106721,
     topicDisabled1640846307653,
     reconnectPeriod1642321826532,
+    multiTopics1659668384878,
+    autoScrollInterval1668415942736,
+    modifyDefaultValueOfAutoScrollInterval1668672504891,
+    removeAutoScroll1673603594888,
+    supportSchemas1688042450818,
+    saveScriptName1688449795669,
+    jsonHighlight1691071794840,
+    ALPNProtocols1691817588169,
+    aiSettings1701761407723,
+    aiTables1701936842016,
+    enableCopilot1703659148195,
+    logLevel1704941582350,
+    updatePayloadTypeToVarchar1630403733965,
+    supportOpenAIAPIHost1716044120271,
+    ignoreQoS0Message1724839386732,
+    changeDefaultLLMModel1727111519962,
+    topicNodeTables1729246737362,
   ],
   migrationsTableName: 'temp_migration_table',
   entities: [
@@ -80,6 +116,8 @@ const ORMConfig = {
     HistoryMessagePayloadEntity,
     WillEntity,
     HistoryConnectionEntity,
+    CopilotEntity,
+    TopicNodeEntity,
   ],
   cli: {
     migrationsDir: 'src/database/migration',

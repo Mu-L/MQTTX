@@ -101,7 +101,6 @@
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator'
 import getClientId from '@/utils/getClientId'
 import { updateConnection } from '@/utils/api/connection'
-import { ConnectionModel, FormRule, NameCallBack } from './types'
 import { MqttClient } from 'mqtt'
 import { Getter } from 'vuex-class'
 
@@ -132,7 +131,6 @@ export default class ConnectionInfo extends Vue {
         { required: true, message: this.$t('common.inputRequired') },
         { validator: this.validateName, trigger: 'blur' },
       ],
-      clientId: [{ required: true, message: this.$t('common.inputRequired') }],
     }
   }
 
@@ -140,7 +138,7 @@ export default class ConnectionInfo extends Vue {
     return this.$refs.form as VueForm
   }
 
-  private async validateName(rule: FormRule, name: string, callBack: NameCallBack['callBack']) {
+  private async validateName(rule: FormRule, name: string, callBack: NameCallBack) {
     for (const oneConnection of this.allConnections) {
       if (name !== this.oldName && oneConnection.name === name) {
         callBack(this.$tc('connections.duplicateName'))

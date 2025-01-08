@@ -21,6 +21,7 @@ body.night {
   --color-bg-card-normal: #323e4f;
   --color-bg-card-gradient: linear-gradient(33deg, #263e4b 0%, #2b344d 100%);
   --color-bg-btn-gradient: linear-gradient(90deg, #35c98d 0%, #37dc85 100%);
+  --color-bg-tags: #262729;
 
   /* Font color */
   --color-text-title: #fff;
@@ -35,12 +36,12 @@ body.night {
   --color-text-historybtn: #fff;
   --color-text-historybtn_disabled: #9d9fa0;
   --color-text-card_icon: #eaebec;
+  --color-text-tags: #d3d3d3;
 
   /* Accent color */
   --color-main-green: #34c388;
   --color-minor-green: #53daa2;
   --color-light-green: #ebf8f2;
-  --color-main-red: #e86aa6;
   --color-minor-red: #f56c6c;
   --color-light-red: #fcdee4;
   --color-main-grey: #292a33;

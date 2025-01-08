@@ -4,11 +4,13 @@ import _ from 'lodash'
 import { InjectRepository } from 'typeorm-typedi-extensions'
 import ConnectionEntity from '@/database/models/ConnectionEntity'
 import WillEntity from '@/database/models/WillEntity'
-import SubscriptionEntity from '@/database/models/SubscriptionEntity'
 import HistoryConnectionEntity from '@/database/models/HistoryConnectionEntity'
 import { Repository, MoreThan, LessThan } from 'typeorm'
 import { DateUtils } from 'typeorm/util/DateUtils'
 import time, { sqliteDateFormat } from '@/utils/time'
+import useServices from '@/database/useServices'
+const Store = require('electron-store')
+const electronStore = new Store()
 
 export const MoreThanDate = (date: string | Date) => MoreThan(DateUtils.mixedDateToUtcDatetimeString(date))
 export const LessThanDate = (date: string | Date) => LessThan(DateUtils.mixedDateToUtcDatetimeString(date))
@@ -16,14 +18,15 @@ export const LessThanDate = (date: string | Date) => LessThan(DateUtils.mixedDat
 @Service()
 export default class ConnectionService {
   constructor(
+    // @ts-ignore
     @InjectRepository(ConnectionEntity)
     private connectionRepository: Repository<ConnectionEntity>,
+    // @ts-ignore
     @InjectRepository(HistoryConnectionEntity)
     private historyConnectionRepository: Repository<HistoryConnectionEntity>,
+    // @ts-ignore
     @InjectRepository(WillEntity)
     private willRepository: Repository<WillEntity>,
-    @InjectRepository(SubscriptionEntity)
-    private subscriptionRepository: Repository<SubscriptionEntity>,
   ) {}
 
   public static entityToModel(data: ConnectionEntity): ConnectionModel {
@@ -70,7 +73,7 @@ export default class ConnectionService {
     } as ConnectionModel
   }
 
-  public static modelToEntity(data: ConnectionModel): ConnectionEntity {
+  public static modelToEntity(data: Partial<ConnectionModel>): Partial<ConnectionEntity> {
     if (data.properties) {
       const {
         sessionExpiryInterval,
@@ -86,8 +89,9 @@ export default class ConnectionService {
       if (data.properties.userProperties) {
         userProperties = JSON.stringify(data.properties.userProperties)
       }
+      const { properties, ...rest } = data
       return {
-        ...data,
+        ...rest,
         sessionExpiryInterval,
         receiveMaximum,
         maximumPacketSize,
@@ -121,172 +125,95 @@ export default class ConnectionService {
     )
   }
 
-  private deepMerge(target: ConnectionModel, source: ConnectionModel): ConnectionModel {
-    const res = _.cloneDeep(target)
-    const _deepMerge = (target: ConnectionModel, source: ConnectionModel) => {
-      return _.mergeWith(target, source, (target, source, key) => {
-        // id property , don't merge
-        if (key === 'id') {
-          return target
-        }
-        // merge array property
-        if (Array.isArray(target) && Array.isArray(source)) {
-          const rightIntersection = source.filter((s) => target.findIndex((t) => s.id === t.id) > -1)
-          const mergedLeft = target.map((t) => {
-            const ri = rightIntersection.find((r) => t.id === r.id)
-            if (ri) {
-              return _.merge(t, ri)
-            }
-            return t
-          })
-          const rightDifference = source.filter((s) => rightIntersection.findIndex((i) => i.id === s.id) === -1)
-          return mergedLeft.concat(rightDifference)
-        }
-        if (
-          source instanceof Object &&
-          target instanceof Object &&
-          source.id !== undefined &&
-          target.id !== undefined
-        ) {
-          return {
-            ...target,
-            ...source,
-            id: target.id,
-          }
-        }
-        return source
-      })
-    }
-    _deepMerge(res, source)
-    return res
-  }
-
-  // cascade update
-  public async updateWithCascade(
+  /**
+   * Imports a single connection with the specified ID and data.
+   *
+   * @param id - The ID of the connection to import.
+   * @param data - The data of the connection to import.
+   * @param getImportProgress - Optional callback function to receive import progress updates.
+   * @returns A Promise that resolves when the import is complete.
+   */
+  public async importOneConnection(
     id: string,
     data: ConnectionModel,
-    args?: Partial<ConnectionEntity>,
-  ): Promise<ConnectionModel | undefined> {
-    const query: ConnectionEntity | undefined = await this.connectionRepository
-      .createQueryBuilder('cn')
-      .where('cn.id = :id', { id })
-      .leftJoinAndSelect('cn.messages', 'msg')
-      .leftJoinAndSelect('cn.subscriptions', 'sub')
-      .leftJoinAndSelect('cn.will', 'will')
-      .getOne()
-
-    const queryModel: ConnectionModel = query ? ConnectionService.entityToModel(query) : data
-    // FIXME: temporary fix, we shouldn't update connectionList data in the connectionDetail page
-    // such as order | parentId etc.
-    data.parentId = queryModel.parentId
-    // END FIXME
-    const res: ConnectionModel = query ? this.deepMerge(queryModel, data) : data
-    // Will Message table
-    if (res.will) {
-      const {
-        id,
-        properties = {
-          contentType: '',
-        },
-        lastWillPayload = '',
-        lastWillTopic = '',
-        lastWillQos = 0,
-        lastWillRetain = false,
-      } = res.will
-      const data: WillEntity = {
-        lastWillPayload,
-        lastWillTopic,
-        lastWillQos,
-        lastWillRetain,
-        willDelayInterval: properties.willDelayInterval,
-        payloadFormatIndicator: properties.payloadFormatIndicator,
-        messageExpiryInterval: properties.messageExpiryInterval,
-        contentType: properties.contentType,
-        responseTopic: properties.responseTopic,
-        correlationData: properties.correlationData?.toString(),
-      }
-      if (id) {
-        // sync memory to database
-        res.will = await this.willRepository.save({
-          id,
-          ...data,
-        })
-      } else {
-        // no will relation in database
-        res.will = await this.willRepository.save(data)
-      }
-    } else {
-      // no will relation in memory or database
-      res.will = await this.willRepository.save({
-        contentType: '',
-        lastWillPayload: '',
-        lastWillTopic: '',
-        lastWillQos: 0,
-        lastWillRetain: false,
-      })
+    getImportOneConnProgress?: (progress: number) => void,
+  ) {
+    const { connectionService, subscriptionService, messageService } = useServices()
+    let progress = 0
+    // Update connection, update subscriptions, and update messages are each considered as a step
+    const totalSteps = 3
+    // Connection table & Will Message table
+    await connectionService.update(id, data)
+    progress += 1 / totalSteps
+    if (getImportOneConnProgress) {
+      getImportOneConnProgress(progress)
     }
     // Subscriptions table
-    if (res.subscriptions && Array.isArray(res.subscriptions)) {
-      const curSubs: SubscriptionEntity[] = await this.subscriptionRepository
-        .createQueryBuilder('sub')
-        .where('sub.connectionId = :id', { id })
-        .getMany()
-      const shouldRemove: SubscriptionEntity[] = curSubs.filter(
-        (subInDataBase) => !res.subscriptions.some((subInMemory) => subInMemory.id === subInDataBase.id),
-      )
-      const shouldUpdate: SubscriptionEntity[] = res.subscriptions.filter((subInMemory) =>
-        res.subscriptions.some((subInDataBase) => subInMemory.id === subInDataBase.id),
-      )
-      await this.subscriptionRepository.remove(shouldRemove)
-      if (shouldUpdate && shouldUpdate.length) {
-        res.subscriptions = (await this.subscriptionRepository.save(
-          shouldUpdate.map((sub) => {
-            return {
-              ...sub,
-              connectionId: undefined,
-            } as SubscriptionEntity
-          }),
-        )) as SubscriptionModel[]
+    if (Array.isArray(data.subscriptions) && data.subscriptions.length) {
+      await subscriptionService.updateSubscriptions(id, data.subscriptions)
+    }
+    progress += 1 / totalSteps
+    if (getImportOneConnProgress) {
+      getImportOneConnProgress(progress)
+    }
+    // Messages table
+    if (Array.isArray(data.messages) && data.messages.length) {
+      await messageService.importMsgsToConnection(data.messages, id, (msgProgress) => {
+        if (getImportOneConnProgress) {
+          // Combine message import progress with total progress proportionally
+          const combinedProgress = progress + msgProgress / totalSteps
+          getImportOneConnProgress(combinedProgress)
+        }
+      })
+    } else {
+      // No messages to import, mark progress as 100% for this connection
+      progress += 1 / totalSteps
+      if (getImportOneConnProgress) {
+        getImportOneConnProgress(progress)
       }
     }
-    const updateAt = time.getNowDate()
-    const saved: ConnectionEntity | undefined = await this.connectionRepository.save(
-      ConnectionService.modelToEntity({
-        ...res,
-        ...args,
-        id,
-        updateAt,
-      }) as ConnectionEntity,
-    )
-    return ConnectionService.entityToModel(saved)
   }
 
-  public async update(id: string, data: ConnectionModel): Promise<ConnectionModel | undefined> {
-    const res: ConnectionEntity | undefined = await this.connectionRepository
-      .createQueryBuilder('cn')
-      .where('cn.id = :id', { id })
-      .getOne()
-    if (!res) {
-      return
-    }
-    // safe it's same data struct in single connection table
-    const merged: ConnectionEntity = _.merge(res, ConnectionService.modelToEntity(data))
-    const query: ConnectionEntity | undefined = await this.connectionRepository.save({
-      ...merged,
-      id,
+  public async update(id: string, data: ConnectionModel) {
+    const { willService } = useServices()
+    const { messages, subscriptions, will, ...rest } = data
+    const savedWill = will && (await willService.save(will))
+    await this.connectionRepository.save({
+      ...ConnectionService.modelToEntity(rest),
+      will: savedWill ?? undefined,
       updateAt: time.getNowDate(),
-    } as ConnectionEntity)
-    return query as ConnectionModel
+      id,
+    })
+    return await this.get(id)
   }
 
-  public async import(data: ConnectionModel[]): Promise<string> {
+  /**
+   * Imports backup connection data into the database.
+   *
+   * @param data - An array of ConnectionModel objects to import.
+   * @param getImportAllProgress - A callback function to track the import progress.
+   * @returns A Promise that resolves to a string indicating the import status.
+   */
+  public async import(data: ConnectionModel[], getImportAllProgress?: (progress: number) => void): Promise<string> {
     try {
+      let overallProgress = 0
+      // Each connection is considered as a step
+      const totalSteps = data.length
+
       for (let i = 0; i < data.length; i++) {
         const { id } = data[i]
         if (id) {
           // FIXME: remove it after support collection importing
           data[i].parentId = null
-          await this.updateWithCascade(id, data[i])
+          await this.importOneConnection(id, data[i], (progress) => {
+            if (getImportAllProgress) {
+              // Calculate the progress of a single connection
+              const connectionProgress = progress / totalSteps
+              getImportAllProgress(overallProgress + connectionProgress)
+            }
+          })
+          // Increase progress after processing each connection
+          overallProgress += 1 / totalSteps
         }
       }
     } catch (err) {
@@ -313,13 +240,13 @@ export default class ConnectionService {
       .createQueryBuilder('cn')
       .where('cn.id = :id', { id })
       // TODO: remove this query
-      .leftJoinAndSelect('cn.messages', 'msg')
       .leftJoinAndSelect('cn.subscriptions', 'sub')
       .leftJoinAndSelect('cn.will', 'will')
       .getOne()
     if (query === undefined) {
       return undefined
     }
+    electronStore.set('leatestId', id)
     return ConnectionService.entityToModel(query)
   }
 
@@ -347,18 +274,26 @@ export default class ConnectionService {
     } as ConnectionModel
   }
 
+  // getAll
+  public async getAll() {
+    const query: ConnectionEntity[] | undefined = await this.connectionRepository.createQueryBuilder('cn').getMany()
+    return query.map((entity) => ConnectionService.entityToModel(entity)) as ConnectionModel[]
+  }
+
   // cascade getAll
-  public async getAll(): Promise<ConnectionModel[] | undefined> {
-    const query: ConnectionEntity[] | undefined = await this.connectionRepository
-      .createQueryBuilder('cn')
+  public async cascadeGetAll(id?: string) {
+    const query = this.connectionRepository.createQueryBuilder('cn')
+
+    id && query.where('cn.id = :id', { id })
+
+    query
       .leftJoinAndSelect('cn.messages', 'msg')
       .leftJoinAndSelect('cn.subscriptions', 'sub')
       .leftJoinAndSelect('cn.will', 'will')
-      .getMany()
-    if (query === undefined) {
-      return undefined
-    }
-    return query.map((entity) => ConnectionService.entityToModel(entity)) as ConnectionModel[]
+
+    const res = await query.getMany()
+
+    return res.map((entity) => ConnectionService.entityToModel(entity)) as ConnectionModel[]
   }
 
   public async create(data: ConnectionModel): Promise<ConnectionModel | undefined> {
@@ -398,7 +333,7 @@ export default class ConnectionService {
     }
     res.will = savedWill
     // TODO: refactor historyConnectionRepository field
-    await this.historyConnectionRepository.save({
+    const result = await this.historyConnectionRepository.save({
       ...res,
       id: undefined,
       lastWillTopic: res.will.lastWillPayload,
@@ -406,6 +341,7 @@ export default class ConnectionService {
       lastWillQos: res.will.lastWillQos,
       lastWillRetain: res.will.lastWillRetain,
     } as HistoryConnectionEntity)
+    electronStore.set('leatestId', result.id)
     return ConnectionService.entityToModel(
       await this.connectionRepository.save(
         ConnectionService.modelToEntity({
@@ -421,9 +357,8 @@ export default class ConnectionService {
   public async delete(id: string): Promise<ConnectionModel | undefined> {
     const query: ConnectionEntity | undefined = await this.connectionRepository
       .createQueryBuilder('cn')
+      .select(['cn.id'])
       .where('cn.id = :id', { id })
-      .leftJoinAndSelect('cn.messages', 'msg')
-      .leftJoinAndSelect('cn.subscriptions', 'sub')
       .leftJoinAndSelect('cn.will', 'will')
       .getOne()
     if (!query) {
@@ -433,6 +368,9 @@ export default class ConnectionService {
     await this.connectionRepository.delete({
       id: query.id,
     })
+    if (electronStore.get('leatestId') === id) {
+      electronStore.set('leatestId', '')
+    }
     return ConnectionService.entityToModel(query) as ConnectionModel
   }
 
@@ -474,6 +412,9 @@ export default class ConnectionService {
   }
 
   public async getLeatestId(): Promise<string | undefined> {
+    if (electronStore.get('leatestId')) {
+      return electronStore.get('leatestId')
+    }
     const leatest: ConnectionEntity | undefined = await this.connectionRepository
       .createQueryBuilder('cn')
       .addOrderBy('createAt', 'ASC')
@@ -482,19 +423,41 @@ export default class ConnectionService {
     return leatest?.id
   }
 
-  public async updateSubscriptions(connectionId: string, subs: SubscriptionModel[]) {
-    const query: SubscriptionEntity[] = await this.subscriptionRepository.find({
-      connectionId,
-    })
-    if (!query || !Array.isArray(query) || !query.length) {
-      await this.subscriptionRepository.save(subs)
+  public async addPushProp(properties: MessageModel['properties'], connectionId: string) {
+    if (!properties) return
+    const query = await this.connectionRepository.findOne(connectionId)
+    if (!query) {
       return
     }
-    await this.subscriptionRepository.remove(
-      query.filter((subInDb) => !subs.some((subInMemory) => subInMemory.id === subInDb.id)),
-    )
-    await this.subscriptionRepository.save(
-      subs.filter((subInMemory) => query.some((subInDb) => subInMemory.id === subInDb.id)),
-    )
+    const updateAt = time.getNowDate()
+    this.connectionRepository.update(connectionId, {
+      ...query,
+      pushPropsPayloadFormatIndicator: properties?.payloadFormatIndicator,
+      pushPropsMessageExpiryInterval: properties?.messageExpiryInterval,
+      pushPropsTopicAlias: properties?.topicAlias,
+      pushPropsResponseTopic: properties?.responseTopic,
+      pushPropsCorrelationData: properties?.correlationData?.toString(),
+      pushPropsUserProperties: JSON.stringify(properties?.userProperties),
+      pushPropsSubscriptionIdentifier: properties?.subscriptionIdentifier,
+      pushPropsContentType: properties?.contentType,
+      updateAt,
+    })
+  }
+
+  public async getPushProp(connectionId: string): Promise<MessageModel['properties'] | undefined> {
+    const query = await this.connectionRepository.findOne(connectionId)
+    if (!query) {
+      return
+    }
+    return {
+      payloadFormatIndicator: query.pushPropsPayloadFormatIndicator,
+      messageExpiryInterval: query.pushPropsMessageExpiryInterval,
+      topicAlias: query.pushPropsTopicAlias,
+      responseTopic: query.pushPropsResponseTopic,
+      correlationData: query.pushPropsCorrelationData,
+      userProperties: query.pushPropsUserProperties ? JSON.parse(query.pushPropsUserProperties) : undefined,
+      subscriptionIdentifier: query.pushPropsSubscriptionIdentifier,
+      contentType: query.pushPropsContentType,
+    } as MessageModel['properties']
   }
 }

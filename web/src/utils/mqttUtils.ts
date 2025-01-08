@@ -1,26 +1,27 @@
-import { IClientOptions } from 'mqtt'
+import mqtt, { MqttClient, IClientOptions } from 'mqtt'
+import Store from '@/store'
+import { getClientId } from '@/utils/idGenerator'
 import time from '@/utils/time'
 import { getSSLFile } from '@/utils/getFiles'
-import { ConnectionModel, SSLContent, WillPropertiesModel } from '@/views/connections/types'
+import _ from 'lodash'
 
-const setMQTT5Properties = (option: IClientOptions['properties']): IClientOptions['properties'] | undefined => {
+const setMQTT5Properties = (option: ClientPropertiesModel) => {
   if (option === undefined) {
     return undefined
   }
-  const properties: IClientOptions['properties'] = {}
-  if (option.sessionExpiryInterval || option.sessionExpiryInterval === 0) {
-    properties.sessionExpiryInterval = option.sessionExpiryInterval
-  }
-  if (option.receiveMaximum || option.sessionExpiryInterval === 0) {
-    properties.receiveMaximum = option.receiveMaximum
-  }
-  if (option.topicAliasMaximum || option.topicAliasMaximum === 0) {
-    properties.topicAliasMaximum = option.topicAliasMaximum
-  }
-  return properties
+  const properties: ClientPropertiesModel = _.cloneDeep(option)
+  return Object.fromEntries(Object.entries(properties).filter(([_, v]) => v !== null && v !== undefined))
 }
 
-export const getClientOptions = (record: ConnectionModel): IClientOptions => {
+const setWillMQTT5Properties = (option: WillPropertiesModel) => {
+  if (option === undefined) {
+    return undefined
+  }
+  const properties: WillPropertiesModel = _.cloneDeep(option)
+  return Object.fromEntries(Object.entries(properties).filter(([_, v]) => v !== null && v !== undefined))
+}
+
+const getClientOptions = (record: ConnectionModel): IClientOptions => {
   const mqttVersionDict = {
     '3.1.1': 4,
     '5.0': 5,
@@ -36,20 +37,26 @@ export const getClientOptions = (record: ConnectionModel): IClientOptions => {
     certType,
     mqttVersion,
     reconnect,
+    reconnectPeriod, // reconnectPeriod = 0 disabled automatic reconnection in the client
     will,
     rejectUnauthorized,
+    ALPNProtocols,
+    clientIdWithTime,
   } = record
-  // reconnectPeriod = 0 disabled automatic reconnection in the client
-  const reconnectPeriod = reconnect ? 4000 : 0
   const protocolVersion = mqttVersionDict[mqttVersion]
   const options: IClientOptions = {
     clientId,
     keepalive,
     clean,
-    reconnectPeriod,
+    reconnectPeriod: reconnect ? reconnectPeriod : 0,
     protocolVersion,
   }
   options.connectTimeout = time.convertSecondsToMs(connectTimeout)
+  // Append timestamp to MQTT client id
+  if (clientIdWithTime) {
+    const clickIconTime = Date.parse(new Date().toString())
+    options.clientId = `${options.clientId}_${clickIconTime}`
+  }
   // Auth
   if (username !== '') {
     options.username = username
@@ -58,71 +65,78 @@ export const getClientOptions = (record: ConnectionModel): IClientOptions => {
     options.password = password
   }
   // MQTT Version
-  if (protocolVersion === 5) {
-    const { sessionExpiryInterval, receiveMaximum, topicAliasMaximum } = record
-    const properties = setMQTT5Properties({
-      sessionExpiryInterval,
-      receiveMaximum,
-      topicAliasMaximum,
-    })
+  if (protocolVersion === 5 && record.properties) {
+    const properties = setMQTT5Properties(record.properties)
     if (properties && Object.keys(properties).length > 0) {
       options.properties = properties
     }
   }
+  // else if (protocolVersion === 3) {
+  //   options.protocolId = 'MQIsdp'
+  // }
   // SSL
   if (ssl) {
-    switch (certType) {
-      case 'self':
-        const sslRes: SSLContent | undefined = getSSLFile({
-          ca: record.ca,
-          cert: record.cert,
-          key: record.key,
-        })
-        if (sslRes) {
-          options.ca = sslRes.ca
-          options.cert = sslRes.cert
-          options.key = sslRes.key
-          if (rejectUnauthorized === undefined) {
-            options.rejectUnauthorized = false
-          } else {
-            options.rejectUnauthorized = rejectUnauthorized
-          }
-        }
-        break
-      default:
-        options.rejectUnauthorized = false
-        break
+    options.rejectUnauthorized = rejectUnauthorized === undefined ? true : rejectUnauthorized
+    if (ALPNProtocols) {
+      options.ALPNProtocols = ALPNProtocols.replace(/[\[\] ]/g, '').split(',')
+    }
+    if (certType === 'self') {
+      const sslRes: SSLContent | undefined = getSSLFile({
+        ca: record.ca,
+        cert: record.cert,
+        key: record.key,
+      })
+      if (sslRes) {
+        options.ca = sslRes.ca
+        options.cert = sslRes.cert
+        options.key = sslRes.key
+      }
     }
   }
   // Will Message
   if (will) {
     const { lastWillTopic: topic, lastWillPayload: payload, lastWillQos: qos, lastWillRetain: retain } = will
     if (topic) {
-      options.will = { topic, payload, qos, retain }
+      options.will = { topic, payload, qos: qos as QoS, retain }
       if (protocolVersion === 5) {
         const { properties } = will
-        const willProperties: WillPropertiesModel | undefined = {}
-        if (properties !== undefined) {
-          if (properties.willDelayInterval || properties.willDelayInterval === 0) {
-            willProperties.willDelayInterval = properties.willDelayInterval
+        if (properties) {
+          const willProperties = setWillMQTT5Properties(properties)
+          if (willProperties && Object.keys(willProperties).length > 0) {
+            options.will.properties = willProperties
           }
-          if (properties.messageExpiryInterval || properties.messageExpiryInterval === 0) {
-            willProperties.messageExpiryInterval = properties.messageExpiryInterval
-          }
-          if (properties.contentType !== '') {
-            willProperties.contentType = properties.contentType
-          }
-          if (properties.payloadFormatIndicator !== undefined) {
-            willProperties.payloadFormatIndicator = properties.payloadFormatIndicator
-          }
-        }
-        if (willProperties && Object.keys(willProperties).length > 0) {
-          options.will.properties = willProperties
         }
       }
     }
   }
+  // Auto Resubscribe, Valid only when reconnecting
+  options.resubscribe = Store.getters.autoResub
   return options
+}
+
+const getUrl = (record: ConnectionModel): string => {
+  const { host, port, path } = record
+  const protocol = getMQTTProtocol(record)
+
+  let url = `${protocol}://${host}:${port}`
+  if (protocol === 'ws' || protocol === 'wss') {
+    url = `${url}${path.startsWith('/') ? '' : '/'}${path}`
+  }
+  return url
+}
+
+export const createClient = (record: ConnectionModel): { curConnectClient: MqttClient; connectUrl: string } => {
+  const options: IClientOptions = getClientOptions(record)
+  const url = getUrl(record)
+  // Map options.properties.topicAliasMaximum to options.topicAliasMaximum, as that is where MQTT.js looks for it.
+  // TODO: remove after bug fixed in MQTT.js v5.
+  const optionsTempWorkAround = Object.assign(
+    { topicAliasMaximum: options.properties ? options.properties.topicAliasMaximum : undefined },
+    options,
+  )
+  const curConnectClient: MqttClient = mqtt.connect(url, optionsTempWorkAround)
+
+  return { curConnectClient, connectUrl: url }
 }
 
 // Prevent old data from missing protocol field
@@ -132,6 +146,68 @@ export const getMQTTProtocol = (data: ConnectionModel): Protocol => {
     return ssl ? 'wss' : 'ws'
   }
   return protocol
+}
+
+export const getDefaultRecord = (): ConnectionModel => {
+  return {
+    clientId: getClientId(),
+    createAt: time.getNowDate(),
+    updateAt: time.getNowDate(),
+    name: '',
+    clean: true,
+    protocol: process.env.VUE_APP_IS_ONLINE_ENV === 'true' ? 'wss' : 'ws',
+    host: process.env.VUE_APP_DEFAULT_HOST ?? 'broker.emqx.io',
+    keepalive: 60,
+    connectTimeout: 10,
+    reconnect: true,
+    reconnectPeriod: 4000,
+    username: '',
+    password: '',
+    path: '/mqtt',
+    port: process.env.VUE_APP_IS_ONLINE_ENV === 'true' ? 8084 : 8083,
+    ssl: false,
+    certType: '',
+    rejectUnauthorized: true,
+    ALPNProtocols: '',
+    ca: '',
+    cert: '',
+    key: '',
+    mqttVersion: '5.0',
+    subscriptions: [],
+    messages: [],
+    pushProps: {},
+    unreadMessageCount: 0,
+    client: {
+      connected: false,
+    },
+    will: {
+      lastWillTopic: '',
+      lastWillPayload: '',
+      lastWillQos: 0,
+      lastWillRetain: false,
+      properties: {
+        payloadFormatIndicator: undefined,
+        willDelayInterval: undefined,
+        messageExpiryInterval: undefined,
+        contentType: '',
+        responseTopic: '',
+        correlationData: undefined,
+        userProperties: undefined,
+      },
+    },
+    properties: {
+      sessionExpiryInterval: undefined,
+      receiveMaximum: undefined,
+      maximumPacketSize: undefined,
+      topicAliasMaximum: undefined,
+      requestResponseInformation: undefined,
+      requestProblemInformation: undefined,
+      userProperties: undefined,
+      authenticationMethod: undefined,
+      authenticationData: undefined,
+    },
+    clientIdWithTime: false,
+  }
 }
 
 export default {}

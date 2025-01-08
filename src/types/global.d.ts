@@ -1,6 +1,6 @@
 import Vue from 'vue'
 import { TranslateResult } from 'vue-i18n'
-import { MqttClient } from 'mqtt'
+import { IPublishPacket, MqttClient } from 'mqtt'
 
 declare global {
   type $TSFixed = any
@@ -11,7 +11,7 @@ declare global {
 
   type Protocol = 'ws' | 'wss' | 'mqtt' | 'mqtts'
 
-  type PayloadType = 'Plaintext' | 'Base64' | 'JSON' | 'Hex'
+  type PayloadType = 'Plaintext' | 'Base64' | 'JSON' | 'Hex' | 'CBOR' | 'MsgPack'
 
   type QoS = 0 | 1 | 2
 
@@ -38,8 +38,6 @@ declare global {
 
   type MessageType = 'all' | 'received' | 'publish'
 
-  type UserPropsPairObject = { key: string; value: string; checked: boolean }
-
   // Vue
   type VueForm = Vue & {
     validate: (validate: (valid: boolean) => void) => void
@@ -54,9 +52,9 @@ declare global {
     validator: () => void
   }
 
-  interface ChartDataModel {
+  interface MetricsModel {
     label: string
-    recevied: number
+    received: number
     sent: number
   }
 
@@ -81,7 +79,6 @@ declare global {
   interface ActiveConnection {
     [id: string]: {
       client: MqttClient
-      messages: MessageModel[]
       subscriptions?: SubscriptionModel[]
     }
   }
@@ -90,9 +87,8 @@ declare global {
     currentLang: Language
     autoCheck: boolean
     autoResub: boolean
-    autoScroll: boolean
-    showSubscriptions: boolean
     syncOsTheme: boolean
+    multiTopics: boolean
     maxReconnectTimes: number
     showClientInfo: {
       [id: string]: boolean
@@ -105,7 +101,18 @@ declare global {
     advancedVisible: boolean
     allConnections: ConnectionModel[]
     currentScript: ScriptState | null
+    currentConnectionId: string | null
     connectionTreeState: ConnectionTreeStateMap
+    jsonHighlight: boolean
+    enableCopilot: boolean
+    openAIAPIHost: string
+    openAIAPIKey: string
+    model: AIModel
+    isPrismButtonAdded: boolean
+    logLevel: LogLevel
+    showConnectionList: boolean
+    connectDatabaseFailMessage: string
+    ignoreQoS0Message: boolean
   }
 
   interface State {
@@ -125,7 +132,6 @@ declare global {
   interface Client {
     readonly id: string
     client: Partial<MqttClient>
-    messages: MessageModel[]
   }
 
   interface Message {
@@ -146,10 +152,7 @@ declare global {
   interface UnreadMessage {
     readonly id: string
     unreadMessageCount?: 0
-  }
-
-  interface SubscriptionsVisible {
-    showSubscriptions: boolean
+    increasedCount?: number
   }
 
   interface SubscriptionModel {
@@ -178,6 +181,16 @@ declare global {
     topic: string
     color?: string
     properties?: PushPropertiesModel
+    meta?: string
+  }
+
+  interface MessagePaginationModel {
+    list: MessageModel[]
+    total: number
+    publishedTotal: number
+    receivedTotal: number
+    limit: number
+    page: number
   }
 
   interface HistoryMessageHeaderModel {
@@ -193,12 +206,13 @@ declare global {
     connectionId?: string
     id?: string
     payload: string
-    payloadType: PayloadType
+    payloadType: string
     createAt?: string
   }
 
   interface SSLPath {
     rejectUnauthorized?: boolean
+    ALPNProtocols?: string | null
     ca: string
     cert: string
     key: string
@@ -212,7 +226,7 @@ declare global {
     contentType?: string | null
     responseTopic?: string | null
     correlationData?: string | Buffer | null
-    userProperties?: Object | null
+    userProperties?: { [key: string]: string | string[] } | null
   }
 
   interface WillModel {
@@ -263,7 +277,7 @@ declare global {
     topicAliasMaximum?: number | null
     requestResponseInformation?: boolean | null
     requestProblemInformation?: boolean | null
-    userProperties?: Object | null
+    userProperties?: { [key: string]: string | string[] } | null
     authenticationMethod?: string | null
     authenticationData?: Buffer | null
   }
@@ -282,7 +296,7 @@ declare global {
     topicAlias?: number | null
     responseTopic?: string | null
     correlationData?: string | Buffer | null
-    userProperties?: Object | null
+    userProperties?: { [key: string]: string | string[] } | null
     subscriptionIdentifier?: number | null
     contentType?: string | null
   }
@@ -317,15 +331,58 @@ declare global {
   }
 
   // Scripts
+  // TODO: split this
   interface ScriptModel {
     id?: string
     name: string
     script: string
+    type?: string | null
   }
 
+  interface FunctionModel {
+    id?: string
+    name: string
+    script: string
+    type?: string | null
+  }
+
+  interface SchemaModel {
+    id?: string
+    name: string
+    rawSchema: string
+    type: SchemaType
+  }
+
+  // TODO: split this
   interface ScriptState {
     apply: MessageType
-    content: ScriptModel | null
+    function?: ScriptModel | null
+    schema?: ScriptModel | null
+    // config of function/schema
+    config?: {
+      // protobuf name
+      name?: string
+    }
+  }
+
+  interface FunctionState {
+    function: ScriptModel | null
+  }
+
+  interface ProtobufSchema {
+    type: 'protobuf'
+    schema: SchemaModel | null
+    protobufMsgName: string
+  }
+
+  interface AvroSchema {
+    type: 'avro'
+    schema: SchemaModel | null
+  }
+
+  type SchemaState = {
+    apply: MessageType
+    schemaOptions: ProtobufSchema | AvroSchema
   }
 
   interface SettingModel {
@@ -334,5 +391,96 @@ declare global {
     currentTheme?: Theme
     maxReconnectTimes?: number
     autoResub?: boolean
+  }
+
+  type SchemaType = 'protobuf' | 'avro'
+  type FunctionType = 'javascript'
+  interface SchemaList {
+    label: string
+    value: SchemaType
+  }
+  interface FunctionList {
+    label: string
+    value: FunctionType
+  }
+
+  interface ImportScriptForm {
+    filePath: string
+    fileName: string
+    fileContent: string
+  }
+
+  type CopilotRole = 'user' | 'system' | 'assistant' | 'function'
+  interface CopilotMessage {
+    id: string
+    role: CopilotRole
+    content: string
+    createAt?: string
+  }
+
+  type AIModel =
+    | 'gpt-3.5-turbo'
+    | 'gpt-3.5-turbo-0125'
+    | 'gpt-3.5-turbo-1106'
+    | 'gpt-3.5-turbo-16k'
+    | 'gpt-4'
+    | 'gpt-4-32k'
+    | 'gpt-4-0613'
+    | 'gpt-4-32k-0613'
+    | 'gpt-4-turbo'
+    | 'gpt-4o'
+    | 'gpt-4o-mini'
+    | 'o1-preview'
+    | 'o1-mini'
+    | string
+
+  interface AreaLineSeriesData {
+    xData: string[]
+    seriesData: {
+      name: string
+      areaStyle: {
+        colorFrom: string
+        colorTo: string
+      }
+      data: any[]
+    }[]
+  }
+
+  type LogLevel = 'debug' | 'info' | 'warn' | 'error'
+
+  interface TopicTreeNode {
+    id: string
+    label: string
+    messageCount: number
+    subTopicCount: number
+    message?: MessageModel
+    connectionInfo?: ConnectionModel
+    parentId?: string
+    children?: TopicTreeNode[]
+  }
+
+  interface UpdateTopicNodeResult {
+    updatedTree: TopicTreeNode[]
+    updatedNode: TopicTreeNode | null
+  }
+
+  interface TopicNodeStats {
+    msgTopic: string
+    msgCount: number
+    lastTime: string
+    latestMessage?: MessageModel
+  }
+
+  interface QueuedMessage {
+    connectionId: string
+    updateNodes: TopicTreeNode[]
+    timestamp: number
+  }
+
+  interface EChartsTreeNode extends TopicTreeNode {
+    name: string
+    lastMessage?: string
+    data?: TopicTreeNode
+    children?: EChartsTreeNode[]
   }
 }

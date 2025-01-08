@@ -1,13 +1,15 @@
 {
   "compilerOptions": {
     "incremental": true,
-    "target": "ES2018",
+    "target": "ES5",
     "module": "commonjs",
     "outDir": "./dist",
-    "lib": ["DOM", "ES2015", "ScriptHost", "ES2019.Array"],
+    "lib": ["ESNext", "ScriptHost", "DOM"],
     "strict": true,
     "esModuleInterop": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "types": ["@types/signale", "jest"],
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts", "src/__tests__"]
 }

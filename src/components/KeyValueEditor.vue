@@ -6,21 +6,25 @@
     </div>
     <div class="editor-row" :style="{ 'max-height': maxHeight }">
       <div v-for="(item, index) in dataList" class="editor-row" :key="index">
-        <a v-if="!disabled" class="btn-check" @click="checkItem(index)">
-          <i v-if="item.checked" class="iconfont el-icon-check"></i>
-          <i v-else class="iconfont el-icon-check disable-icon"></i>
-        </a>
         <el-input
+          :ref="`KeyRef${index}`"
           placeholder="Key"
           size="mini"
+          type="textarea"
+          resize="none"
+          :autosize="{ minRows: 1, maxRows: 3 }"
           :disabled="disabled"
           v-model="item.key"
           class="input-prop user-prop-key"
           @input="handleInputChange"
         />
         <el-input
+          :ref="`ValueRef${index}`"
           placeholder="Value"
           size="mini"
+          type="textarea"
+          resize="none"
+          :autosize="{ minRows: 1, maxRows: 3 }"
           :disabled="disabled"
           v-model="item.value"
           class="input-prop user-prop-value"
@@ -33,13 +37,12 @@
 </template>
 
 <script lang="ts">
-import { Component, Model, Prop, Vue } from 'vue-property-decorator'
+import { Component, Model, Prop, Vue, Watch } from 'vue-property-decorator'
 import _ from 'lodash'
 
 interface KeyValueObj {
   key: string
   value: string
-  checked: boolean
 }
 
 @Component
@@ -47,17 +50,37 @@ export default class KeyValueEditor extends Vue {
   @Prop({ required: false, default: '' }) private title!: string
   @Prop({ required: false, default: '100%' }) private maxHeight!: string
   @Prop({ required: false, default: false }) private disabled!: boolean
-  @Model('change', { type: Object }) private readonly value!: { [key: string]: string } | null
+  @Model('change', { type: Object }) private readonly value!: ClientPropertiesModel['userProperties'] | null
 
   private dataList: KeyValueObj[] = []
 
+  @Watch('value')
+  private handleValueChanged(
+    val: ClientPropertiesModel['userProperties'],
+    oldVal: ClientPropertiesModel['userProperties'],
+  ) {
+    if (oldVal === undefined && val) {
+      this.processObjToArry()
+    }
+  }
+
   private handleInputChange() {
-    const checkedList = this.dataList.filter((pair) => pair.checked)
-    const objData: {
-      [key: string]: string
-    } = {}
-    checkedList.forEach(({ key, value }) => {
-      if (key !== '') {
+    if (this.dataList.length === 0) {
+      this.$emit('change', null)
+      return
+    }
+    const objData: ClientPropertiesModel['userProperties'] = {}
+    this.dataList.forEach(({ key, value }) => {
+      if (key === '') return
+      const objValue = objData[key]
+      if (objValue) {
+        const _value = value as string
+        if (Array.isArray(objValue)) {
+          objData[key] = [...objValue, _value]
+        } else {
+          objData[key] = [objValue, _value]
+        }
+      } else {
         objData[key] = value
       }
     })
@@ -65,38 +88,62 @@ export default class KeyValueEditor extends Vue {
   }
 
   private addItem() {
-    this.dataList.push({ key: '', value: '', checked: true })
+    this.dataList.push({ key: '', value: '' })
   }
   private deleteItem(index: number) {
     if (this.dataList.length > 1) {
       this.dataList.splice(index, 1)
       this.handleInputChange()
     } else if (this.dataList.length === 1) {
-      this.dataList = [{ key: '', value: '', checked: true }]
+      this.dataList = [{ key: '', value: '' }]
       this.$emit('change', null)
     }
   }
-  private checkItem(index: number) {
-    this.dataList[index].checked = !this.dataList[index].checked
-    this.handleInputChange()
-  }
 
   private processObjToArry() {
-    if (this.value === undefined || this.value === null) {
-      this.dataList = [{ key: '', value: '', checked: true }]
+    if (_.isEmpty(this.value)) {
+      this.dataList = [{ key: '', value: '' }]
       return
     }
-    this.dataList = Object.entries(this.value).map(([key, value]) => {
-      return {
-        key,
-        value,
-        checked: true,
+    this.dataList = []
+    Object.entries(this.value as { [key: string]: string | string[] }).forEach(([key, value]) => {
+      if (typeof value === 'string') {
+        this.dataList.push({ key, value })
+      } else {
+        value.forEach((item) => {
+          this.dataList.push({ key, value: item })
+        })
+      }
+    })
+  }
+
+  private resizeInput() {
+    interface ResizeTextarea {
+      resizeTextarea: () => void
+    }
+    this.dataList.forEach((_, i) => {
+      if (this.$refs[`ValueRef${i}`]) {
+        const valueRef = this.$refs[`ValueRef${i}`]
+        if (Array.isArray(valueRef)) {
+          ;(valueRef[0] as unknown as ResizeTextarea).resizeTextarea()
+        }
+      }
+      if (this.$refs[`KeyRef${i}`]) {
+        const keyRef = this.$refs[`KeyRef${i}`]
+        if (Array.isArray(keyRef)) {
+          ;(keyRef[0] as unknown as ResizeTextarea).resizeTextarea()
+        }
       }
     })
   }
 
   private created() {
     this.processObjToArry()
+    window.addEventListener('resize', this.resizeInput)
+  }
+
+  private beforeDestroy() {
+    window.removeEventListener('resize', this.resizeInput)
   }
 }
 </script>
@@ -115,8 +162,8 @@ export default class KeyValueEditor extends Vue {
     overflow-y: scroll;
     white-space: nowrap;
     .editor-row {
+      overflow: hidden;
       display: flex;
-      justify-content: space-between;
       align-items: center;
       &:not(:last-child) {
         margin-bottom: 10px;
@@ -124,15 +171,14 @@ export default class KeyValueEditor extends Vue {
       .input-prop {
         padding: 0px;
         margin-right: 10px;
-      }
-      .btn-check {
-        cursor: pointer;
-        .el-icon-check {
-          font-size: 14px;
-          margin-right: 10px;
-        }
-        .disable-icon {
-          color: dimgray;
+        textarea {
+          padding: 4px 15px;
+          background: transparent;
+          border-radius: 4px;
+          overflow-y: hidden;
+          &:hover {
+            overflow-y: overlay;
+          }
         }
       }
     }

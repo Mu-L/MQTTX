@@ -9,19 +9,20 @@ import VueI18n from 'vue-i18n'
 import VueClipboard from 'vue-clipboard2'
 import Lang from './lang'
 import element from './utils/element'
-import VueGtag from 'vue-gtag'
+import VueVirtualScroller from 'vue-virtual-scroller'
+import VueRx from 'vue-rx'
+import VueGtm, { VueGtmUseOptions } from '@gtm-support/vue2-gtm'
 
 Vue.use(element)
 Vue.use(VueI18n)
 Vue.use(VueClipboard)
-Vue.use(
-  VueGtag,
-  {
-    config: { id: 'UA-132213201-1' },
-    enabled: process.env.NODE_ENV === 'production',
-  },
-  router,
-)
+Vue.use(VueVirtualScroller)
+Vue.use(VueRx)
+Vue.use(VueGtm, {
+  id: 'GTM-KHSFXHT',
+  enabled: process.env.VUE_APP_IS_ONLINE_ENV === 'true',
+  debug: false,
+} as VueGtmUseOptions)
 
 const locale: Language = store.state.app.currentLang
 const vueI18n: VueI18n = new VueI18n({

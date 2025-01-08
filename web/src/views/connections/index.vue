@@ -13,7 +13,7 @@
         :click-method="toCreateConnection"
       />
       <template v-else>
-        <ConnectionForm v-if="oper" ref="connectionForm" :oper="oper" @connect="onConnect" />
+        <ConnectionForm v-if="oper" ref="connectionForm" :oper="oper" @connect="onConnect" @refresh="loadData" />
         <ConnectionsDetail
           v-show="!oper"
           ref="ConnectionsDetail"
@@ -34,7 +34,7 @@ import EmptyPage from '@/components/EmptyPage.vue'
 import ConnectionsList from './ConnectionsList.vue'
 import ConnectionsDetail from './ConnectionsDetail.vue'
 import ConnectionForm from './ConnectionForm.vue'
-import { ConnectionModel } from './types'
+import { getDefaultRecord } from '@/utils/mqttUtils'
 
 @Component({
   components: {
@@ -52,31 +52,7 @@ export default class Connections extends Vue {
 
   private isEmpty: boolean = false
   private records: ConnectionModel[] | [] = []
-  private currentConnection: ConnectionModel = {
-    clientId: '',
-    name: '',
-    clean: false,
-    host: '',
-    keepalive: 60,
-    connectTimeout: 4000,
-    reconnect: true,
-    username: '',
-    password: '',
-    path: '/mqtt',
-    port: 8083,
-    certType: '',
-    ssl: false,
-    mqttVersion: '5.0',
-    subscriptions: [],
-    messages: [],
-    unreadMessageCount: 0,
-    client: {
-      connected: false,
-    },
-    ca: '',
-    cert: '',
-    key: '',
-  }
+  private currentConnection: ConnectionModel = { ...getDefaultRecord() }
 
   @Watch('$route.params.id')
   private handleIdChanged(val: string) {
@@ -102,19 +78,24 @@ export default class Connections extends Vue {
     }
   }
 
-  private async loadData(reload: boolean = false): Promise<void> {
+  private async loadData(loadLatest: boolean = false, _firstLoad: boolean = false, callback?: () => {}): Promise<void> {
     const connections: ConnectionModel[] | [] = await loadConnections()
     this.changeAllConnections({ allConnections: connections })
     this.records = connections
-    if (reload && connections.length) {
+    if (loadLatest && connections.length) {
+      // TODO: load latest connection
       this.$router.push({ path: `/recent_connections/${connections[0].id}` })
     }
     if (connections.length && this.connectionId !== 'create') {
       this.loadDetail(this.connectionId)
       this.isEmpty = false
     } else {
+      if (this.oper === 'edit') {
+        this.$router.push({ path: '/recent_connections' })
+      }
       this.isEmpty = true
     }
+    callback && callback()
   }
 
   private toCreateConnection() {

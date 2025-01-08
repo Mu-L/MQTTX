@@ -26,9 +26,30 @@ export default class SettingEntity {
   @Column({ type: 'boolean', default: true })
   autoResub!: boolean
 
-  @Column({ type: 'boolean', default: true })
-  autoScroll!: boolean
-
   @Column({ type: 'boolean', default: false })
   syncOsTheme!: boolean
+
+  @Column({ type: 'boolean', default: true })
+  multiTopics!: boolean
+
+  @Column({ type: 'boolean', default: true })
+  jsonHighlight!: boolean
+
+  @Column({ type: 'boolean', default: true })
+  enableCopilot!: boolean
+
+  @Column({ type: 'varchar', default: 'https://api.openai.com/v1' })
+  openAIAPIHost!: string
+
+  @Column({ type: 'varchar', default: '' })
+  openAIAPIKey!: string
+
+  @Column({ type: 'varchar', default: 'gpt-4o' })
+  model!: string
+
+  @Column({ type: 'simple-enum', enum: ['debug', 'info', 'warn', 'error'], default: 'info' })
+  logLevel!: 'debug' | 'info' | 'warn' | 'error'
+
+  @Column({ type: 'boolean', default: false })
+  ignoreQoS0Message!: boolean
 }

@@ -7,7 +7,7 @@
         :key="item.id"
         :class="['connection-item', { active: item.id === connectionId }]"
         @click="handleSelectConnection(item)"
-        @contextmenu="handleContextMenu(item, $event)"
+        @contextmenu.prevent="handleContextMenu(item, $event)"
       >
         <div class="item-left">
           <div
@@ -49,9 +49,7 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator'
 import { Getter, Action } from 'vuex-class'
-import { MqttClient } from 'mqtt'
 import Contextmenu from '@/components/Contextmenu.vue'
-import { ConnectionModel, ContextmenuModel } from './types'
 
 @Component({
   components: {

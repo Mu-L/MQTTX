@@ -1,23 +1,26 @@
 <img src="./assets/mqttx-logo.png" width="480" alt="MQTTX Logo" />
 
 [![GitHub Release](https://img.shields.io/github/release/emqx/mqttx?color=brightgreen)](https://github.com/emqx/mqttx/releases)
-![Support Platforms](https://camo.githubusercontent.com/a50c47295f350646d08f2e1ccd797ceca3840e52/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f706c6174666f726d2d6d61634f5325323025374325323057696e646f77732532302537432532304c696e75782d6c69676874677265792e737667)
+![platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)
 ![build packages](https://github.com/emqx/MQTTX/workflows/build%20packages/badge.svg)
-[![Total Downloads](https://img.shields.io/github/downloads/emqx/mqttx/total.svg)](https://github.com/emqx/mqttx/releases)
-[![Slack](https://img.shields.io/badge/Slack-EMQX-39AE85?logo=slack)](https://slack-invite.emqx.io/) [![Discord](https://img.shields.io/discord/931086341838622751?label=Discord&logo=discord)](https://discord.gg/xYGf3fQnES)
-[![Community](https://img.shields.io/badge/Community-MQTT%20X-yellow?logo=github)](https://github.com/emqx/MQTTX/discussions)
-[![YouTube](https://img.shields.io/badge/Subscribe-EMQ-FF0000?logo=youtube)](https://www.youtube.com/channel/UC5FjR77ErAxvZENEWzQaO5Q)
-[![Twitter](https://img.shields.io/badge/Follow-EMQ-1DA1F2?logo=twitter)](https://twitter.com/EMQTech)
 
-English | [简体中文](./README-CN.md) | [日本語](./README-JP.md)
+[![GitHub Downloads](https://img.shields.io/github/downloads/emqx/MQTTX/total?label=GitHub%20Downloads)](https://mqttx.app/downloads)
+[![Docker Web Pulls](https://img.shields.io/docker/pulls/emqx/mqttx-web?label=Docker%20Web%20Pulls)](https://hub.docker.com/r/emqx/mqttx-web)
+[![Docker CLI Pulls](https://img.shields.io/docker/pulls/emqx/mqttx-cli?label=Docker%20CLI%20Pulls)](https://hub.docker.com/r/emqx/mqttx-cli)  
+
+[![Community](https://img.shields.io/badge/Community-MQTTX-yellow?logo=github)](https://github.com/emqx/MQTTX/discussions)
+[![Slack](https://img.shields.io/badge/Slack-EMQX-39AE85?logo=slack)](https://slack-invite.emqx.io/)
+[![Discord](https://img.shields.io/discord/931086341838622751?label=Discord&logo=discord)](https://discord.gg/xYGf3fQnES)
+[![YouTube](https://img.shields.io/badge/Subscribe-EMQ-FF0000?logo=youtube)](https://www.youtube.com/channel/UC5FjR77ErAxvZENEWzQaO5Q)
+[![Twitter Follows](https://img.shields.io/twitter/follow/EMQTech?label=Twitter%20Follows)](https://twitter.com/EMQTech)
 
 ---
 
-[MQTT X](https://mqttx.app) is a cross-platform MQTT 5.0 client tool open sourced by [EMQ](https://www.emqx.com/en), which can run on macOS, Linux and Windows, and supports formatting MQTT payload.
+[MQTTX](https://mqttx.app) is a cross-platform [MQTT 5.0](https://www.emqx.com/en/blog/introduction-to-mqtt-5) client tool open sourced by [EMQ](https://www.emqx.com/en), which can run on macOS, Linux and Windows, and supports formatting MQTT payload.
 
-[MQTT X](https://mqttx.app) simplifies the operation logic of the page with the help of chatting software, makes it easy and quick to create multiple simultaneous online MQTT client connections, test the connection, publish, and subscribe functions of MQTT/TCP, MQTT/TLS, MQTT/WebSocket as well as other MQTT protocol features.
+[MQTTX](https://mqttx.app) simplifies test operation with the help of a familiar, chat-like interface. It’s easy and quick to create multiple, simultaneous online MQTT client connections, and can test the connection, publishing, and subscription functions of MQTT/TCP, MQTT/TLS, MQTT/WebSocket as well as other MQTT protocol features.
 
-> [MQTT](http://mqtt.org/faq) stands for MQ Telemetry Transport. It is a publish/subscribe, extremely simple and lightweight messaging protocol, designed for constrained devices and low-bandwidth, high-latency or unreliable networks.
+> [MQTT](https://www.emqx.com/en/blog/the-easiest-guide-to-getting-started-with-mqtt) stands for MQ Telemetry Transport. It is a publish/subscribe, extremely simple and lightweight messaging protocol, designed for constrained devices and low-bandwidth, high-latency or unreliable networks.
 
 ## Preview
 
@@ -33,7 +36,7 @@ Currently available for download from these app stores
 
 ### Homebrew
 
-The macOS users can install MQTT X using [brew cask](https://formulae.brew.sh/cask/mqttx)
+The macOS users can install MQTTX using [brew cask](https://formulae.brew.sh/cask/mqttx)
 
 ```shell
 brew install --cask mqttx
@@ -48,15 +51,15 @@ brew install --cask mqttx
 
 Download from [GitHub Releases](https://github.com/emqx/MQTTX/releases) and install it.
 
-Alternative, you can download [here](https://www.emqx.io/downloads/MQTTX/).
+Alternative, you can download [here](https://www.emqx.com/downloads/MQTTX/).
 
 ## Usage
 
-See our [blog](https://www.emqx.io/blog/mqtt-x-guideline) or [manual](./docs/manual.md) for details.
+See our [documentation](https://mqttx.app/docs) or [manual](./docs/manual.md) for details.
 
 1. Get MQTT Broker Ready.
 
-    - If you do not need to deploy the MQTT Broker locally, you can use the public MQTT 5.0 Broker provided by [EMQX Cloud](https://www.emqx.com/en/cloud) for testing:
+    - If you do not need to deploy the MQTT Broker locally, you can use the [public MQTT 5.0 Broker](https://www.emqx.com/en/mqtt/public-mqtt5-broker) provided by [EMQX Cloud](https://www.emqx.com/en/cloud) for testing:
 
         ```shell
         Broker IP: broker.emqx.io
@@ -76,7 +79,7 @@ See our [blog](https://www.emqx.io/blog/mqtt-x-guideline) or [manual](./docs/man
 
 ## Better Together with EMQX
 
-MQTT X is designed to connect to test MQTT Brokers such as EMQX, The one-click connection and simple graphical interface make it easy to connect to EMQX or EMQX Cloud to debug and explore functional features.
+MQTTX is designed to connect to test MQTT Brokers such as EMQX, The one-click connection and simple graphical interface make it easy to connect to EMQX or EMQX Cloud to debug and explore functional features.
 
 [Sign up EMQX Cloud for 14 days free trial](https://www.emqx.com/en/try?product=cloud)
 
@@ -93,7 +96,7 @@ MQTT X is designed to connect to test MQTT Brokers such as EMQX, The one-click c
 
 Recommended version for Node environment:
 
-- v14.\*.\*
+- v16.\*.\*
 
 ``` shell
 # Clone
@@ -127,7 +130,7 @@ yarn run electron:build-mac
 
 ## Contributing
 
-Please make sure to read the [Contributing Guide](https://github.com/emqx/MQTTX/blob/master/.github/CONTRIBUTING.md) before making a pull request.
+Please make sure to read the [Contributing Guide](https://github.com/emqx/MQTTX/blob/main/.github/CONTRIBUTING.md) before making a pull request.
 
 ## Technology Stack
 
@@ -140,7 +143,7 @@ Please make sure to read the [Contributing Guide](https://github.com/emqx/MQTTX/
 
 ## Resources
 
-- [MQTT client programming](https://www.emqx.com/en/blog/tag/mqtt-client-programming)
+- [MQTT Programming](https://www.emqx.com/en/blog/category/mqtt-programming)
 
   A series of blogs to help developers get started quickly with MQTT in PHP, Node.js, Python, Golang, and other programming languages.
 
@@ -150,4 +153,4 @@ Please make sure to read the [Contributing Guide](https://github.com/emqx/MQTTX/
 
 ## License
 
-Apache License 2.0, see [LICENSE](https://github.com/emqx/MQTTX/blob/master/LICENSE).
+Apache License 2.0, see [LICENSE](https://github.com/emqx/MQTTX/blob/main/LICENSE).

@@ -31,6 +31,7 @@ export default class Editor extends Vue {
   @Model('change', { type: String }) private readonly value!: string
 
   @Getter('currentTheme') private theme!: Theme
+  @Getter('showConnectionList') private showConnectionList!: boolean
 
   private editor: monaco.editor.IStandaloneCodeEditor | null = null
 
@@ -64,6 +65,13 @@ export default class Editor extends Vue {
       this.editor.dispose()
       this.initEditor()
     }
+  }
+
+  @Watch('showConnectionList')
+  private handleShowConnectionListChanged(val: boolean) {
+    setTimeout(() => {
+      this.editorLayout()
+    }, 500)
   }
 
   // init and register customer editor style
@@ -184,10 +192,10 @@ export default class Editor extends Vue {
     monaco.editor.defineTheme('editor-dark', dark)
     monaco.editor.defineTheme('editor-night', night)
     if (this.isCustomerLang) {
+      // log theme
       const log = { ...LogEditor, ...LogEditorRules } as monaco.editor.IStandaloneThemeData
       const logDark = { ...LogEditorDark, ...LogEditorRules } as monaco.editor.IStandaloneThemeData
       const logNight = { ...LogEditorNight, ...LogEditorRules } as monaco.editor.IStandaloneThemeData
-      // customer language theme
       monaco.editor.defineTheme('editor-log', log)
       monaco.editor.defineTheme('editor-log-dark', logDark)
       monaco.editor.defineTheme('editor-log-night', logNight)
@@ -219,12 +227,11 @@ export default class Editor extends Vue {
 
   private mounted() {
     this.initEditor()
+    window.addEventListener('resize', this.editorLayout)
   }
+
   private created() {
     this.defineTheme()
-    window.onresize = () => {
-      this.editorLayout()
-    }
   }
 
   public destroyEditor() {
@@ -240,6 +247,7 @@ export default class Editor extends Vue {
 
   private beforeDestroy() {
     this.destroyEditor()
+    window.removeEventListener('resize', this.editorLayout)
   }
 }
 </script>

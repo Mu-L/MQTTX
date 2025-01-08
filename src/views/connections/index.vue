@@ -1,11 +1,20 @@
 <template>
   <div class="connections">
-    <div class="left-list">
-      <ConnectionsList :ConnectionModelData="records" @delete="onDelete" @reload="loadData(true, false)" />
-    </div>
+    <transition name="slide">
+      <div v-show="showConnectionList" class="left-list">
+        <ConnectionsList ref="connectionList" @delete="onDelete" @reload="loadData(true, false)" />
+      </div>
+    </transition>
     <div class="connections-view">
       <template v-if="isLoadingData">
-        <el-skeleton class="connection-skeleton-page" :row="8" animated />
+        <el-skeleton
+          class="connection-skeleton-page"
+          :row="8"
+          animated
+          :style="{
+            marginLeft: showConnectionList ? '370px' : '96px',
+          }"
+        />
       </template>
       <template v-else>
         <EmptyPage
@@ -15,7 +24,7 @@
           :click-method="toCreateConnection"
         />
         <template v-else>
-          <ConnectionForm v-if="oper" ref="connectionForm" :oper="oper" @connect="onConnect" />
+          <ConnectionForm v-if="oper" ref="connectionForm" :oper="oper" @connect="onConnect" @refresh="loadData" />
           <ConnectionsDetail
             v-show="!oper"
             ref="connectionsDetail"
@@ -31,7 +40,7 @@
 
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator'
-import { Action } from 'vuex-class'
+import { Action, Getter } from 'vuex-class'
 import EmptyPage from '@/components/EmptyPage.vue'
 import ConnectionsList from './ConnectionsList.vue'
 import ConnectionsDetail from './ConnectionsDetail.vue'
@@ -48,13 +57,17 @@ import { getDefaultRecord } from '@/utils/mqttUtils'
   },
 })
 export default class Connections extends Vue {
-  @Action('CHANGE_ALL_CONNECTIONS') private changeAllConnections!: (payload: {
-    allConnections: ConnectionModel[] | []
+  @Getter('showConnectionList') private showConnectionList!: boolean
+
+  @Action('SET_CURRENT_CONNECTION_ID') private setCurrentConnectionId!: (id: string) => void
+  @Action('SET_DATABASE_FAIL_MESSAGE') private setDatabaseFailMessage!: ({
+    connectDatabaseFailMessage,
+  }: {
+    connectDatabaseFailMessage: string
   }) => void
 
   private isEmpty: boolean = false
   private isLoadingData: boolean = false
-  private records: ConnectionModel[] = []
   private currentConnection: ConnectionModel = { ...getDefaultRecord() }
 
   @Watch('$route.params.id')
@@ -90,38 +103,53 @@ export default class Connections extends Vue {
     return this.$route.params.id
   }
 
-  get vueForm(): VueForm {
-    return this.$refs.form as VueForm
-  }
-
   private async loadDetail(id: string): Promise<void> {
+    // Connection ID only needs to be set for non-new connections.
+    if (id !== '0') {
+      this.setCurrentConnectionId(id)
+    }
     const { connectionService } = useServices()
-    const res: ConnectionModel | undefined = await connectionService.get(id)
+    const res = await connectionService.get(id)
     if (res) {
       this.currentConnection = res
     }
   }
 
-  private async loadData(loadLatest: boolean = false, firstLoad: boolean = false, callback?: () => {}): Promise<void> {
-    if (firstLoad) {
-      this.isLoadingData = true
+  private async loadData(
+    shouldLoadLatest: boolean = false,
+    firstLoad: boolean = false,
+    callback?: () => {},
+  ): Promise<void> {
+    try {
+      if (firstLoad) {
+        this.isLoadingData = true
+      }
+      const { connectionService } = useServices()
+      const connections: ConnectionModel[] | [] = (await connectionService.getAll()) ?? []
+      this.refreshConnectionList()
+      this.isLoadingData = false
+      if (connections.length && shouldLoadLatest) {
+        const latestId = await connectionService.getLeatestId()
+        this.$router.push({ path: `/recent_connections/${latestId}` })
+      }
+      if (connections.length && this.connectionId !== 'create') {
+        this.isEmpty = false
+        await this.loadDetail(this.connectionId)
+      } else {
+        if (this.oper === 'edit') {
+          this.$router.push({ path: '/recent_connections' })
+        }
+        this.isEmpty = true
+      }
+    } catch (error) {
+      const err = error as any
+      this.$log.error(`Failed to load data: ${JSON.stringify(err, null, 2)}`)
+      if (err.code === 'SQLITE_ERROR') {
+        this.setDatabaseFailMessage({ connectDatabaseFailMessage: `Failed to load data: ${error}` })
+      }
+    } finally {
+      callback && callback()
     }
-    const { connectionService } = useServices()
-    const connections: ConnectionModel[] | [] = (await connectionService.getAll()) ?? []
-    this.changeAllConnections({ allConnections: connections })
-    this.records = connections
-    this.isLoadingData = false
-    if (connections.length && loadLatest) {
-      const leatestId = await connectionService.getLeatestId()
-      this.$router.push({ path: `/recent_connections/${leatestId}` })
-    }
-    if (connections.length && this.connectionId !== 'create') {
-      this.isEmpty = false
-      await this.loadDetail(this.connectionId)
-    } else {
-      this.isEmpty = true
-    }
-    callback && callback()
   }
 
   private toCreateConnection() {
@@ -140,6 +168,11 @@ export default class Connections extends Vue {
   private onDelete(data: ConnectionModel) {
     const connectionsDetailRef = this.$refs.connectionsDetail as ConnectionsDetail
     connectionsDetailRef.removeConnection(data)
+  }
+
+  private refreshConnectionList(firstLoad = false) {
+    const connectionListRef = this.$refs.connectionList as ConnectionsList
+    connectionListRef.loadData(firstLoad)
   }
 
   private created() {

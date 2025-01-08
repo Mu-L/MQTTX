@@ -5,19 +5,17 @@
 ![build packages](https://github.com/emqx/MQTTX/workflows/build%20packages/badge.svg)
 [![Total Downloads](https://img.shields.io/github/downloads/emqx/mqttx/total.svg)](https://github.com/emqx/mqttx/releases)
 [![Slack](https://img.shields.io/badge/Slack-EMQX-39AE85?logo=slack)](https://slack-invite.emqx.io/) [![Discord](https://img.shields.io/discord/931086341838622751?label=Discord&logo=discord)](https://discord.gg/xYGf3fQnES)
-[![Community](https://img.shields.io/badge/Community-MQTT%20X-yellow?logo=github)](https://github.com/emqx/MQTTX/discussions)
+[![Community](https://img.shields.io/badge/Community-MQTTX-yellow?logo=github)](https://github.com/emqx/MQTTX/discussions)
 [![YouTube](https://img.shields.io/badge/Subscribe-EMQ-FF0000?logo=youtube)](https://www.youtube.com/channel/UC5FjR77ErAxvZENEWzQaO5Q)
 [![Twitter](https://img.shields.io/badge/Follow-EMQ-1DA1F2?logo=twitter)](https://twitter.com/EMQTech)
 
-[English](./README.md) | [简体中文](./README-CN.md) | 日本語
-
 ---
 
-[MQTT X](https://mqttx.app/)は、[EMQ](https://www.emqx.com/en)によってオープンソース化されたクロスプラットフォームMQTT 5.0クライアントツールです。macOS、Linux、Windows、また、MQTTメッセージ形式の変換をサポートします。
+[MQTTX](https://mqttx.app/)は、[EMQ](https://www.emqx.com/en)によってオープンソース化されたクロスプラットフォーム[MQTT 5.0](https://www.emqx.com/en/blog/introduction-to-mqtt-5)クライアントツールです。macOS、Linux、Windows、また、MQTTメッセージ形式の変換をサポートします。
 
-[MQTT X](https://mqttx.app/)のユーザーインターフェイスは、チャットソフトウェアのような形でページの操作ロジックを簡素化します。ユーザーは、接続をすばやく作成し、複数の接続クライアントを同時に保存および確立できます。 MQTT/TCP、MQTT/TLS、MQTT/WebSocketの**接続/パブリッシュ/サブスクライブ**機能およびその他の機能をすばやくテストすることが便利です。
+[MQTTX](https://mqttx.app/)のユーザーインターフェイスは、チャットソフトウェアのような形でページの操作ロジックを簡素化します。ユーザーは、接続をすばやく作成し、複数の接続クライアントを同時に保存および確立できます。 MQTT/TCP、MQTT/TLS、MQTT/WebSocketの**接続/パブリッシュ/サブスクライブ**機能およびその他の機能をすばやくテストすることが便利です。
 
-> [MQTT](http://mqtt.org/faq)（Message Queuing Telemetry Transport）は、パブリッシュ/サブスクライブパラダイムに基づいた「軽量」メッセージングプロトコルです。制約のあるデバイスや、低帯域幅、高遅延、または信頼性の低いネットワークで使用するように設計されています。IBMによって公開されています。
+> [MQTT](https://www.emqx.com/ja/blog/the-easiest-guide-to-getting-started-with-mqtt)（Message Queuing Telemetry Transport）は、パブリッシュ/サブスクライブパラダイムに基づいた「軽量」メッセージングプロトコルです。制約のあるデバイスや、低帯域幅、高遅延、または信頼性の低いネットワークで使用するように設計されています。IBMによって公開されています。
 
 ## 機能プレビュー
 
@@ -33,7 +31,7 @@
 
 ### Homebrew
 
-macOS ユーザーは、[brew cask](https://formulae.brew.sh/cask/mqttx) を使用して MQTT X をインストールできます。
+macOS ユーザーは、[brew cask](https://formulae.brew.sh/cask/mqttx) を使用して MQTTX をインストールできます。
 
 ```shell
 brew install --cask mqttx
@@ -91,7 +89,7 @@ yarn run electron:build
 
 ## プロジェクトへの貢献
 
-PRを提出する前に、貢献ガイドをよく読んでください。[Contributing Guide](https://github.com/emqx/MQTTX/blob/master/.github/CONTRIBUTING.md)
+PRを提出する前に、貢献ガイドをよく読んでください。[Contributing Guide](https://github.com/emqx/MQTTX/blob/main/.github/CONTRIBUTING.md)
 
 ## テクノロジースタック
 
@@ -104,4 +102,4 @@ PRを提出する前に、貢献ガイドをよく読んでください。[Contr
 
 ## License
 
-Apache License 2.0, see [LICENSE](https://github.com/emqx/MQTTX/blob/master/LICENSE).
+Apache License 2.0, see [LICENSE](https://github.com/emqx/MQTTX/blob/main/LICENSE).

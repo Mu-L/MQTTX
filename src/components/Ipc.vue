@@ -26,10 +26,17 @@ export default class Ipc extends Vue {
         ipcRenderer.send('newWindow', id)
       }
     })
+    ipcRenderer.on('newConnections', () => {
+      this.$router.push({ path: '/recent_connections/0?oper=create' })
+    })
   }
 
   private unbindIpcEvents(): void {
     ipcRenderer.removeAllListeners('setting')
+    ipcRenderer.removeAllListeners('preferences')
+    ipcRenderer.removeAllListeners('about')
+    ipcRenderer.removeAllListeners('newWindow')
+    ipcRenderer.removeAllListeners('newConnections')
   }
 
   private handleIcpEvents(event: string, value: any): void {

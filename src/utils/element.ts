@@ -27,12 +27,12 @@ import {
   Switch,
   Select,
   Option,
-  // OptionGroup,
+  OptionGroup,
   Button,
   // ButtonGroup,
   // Table,
   // TableColumn,
-  // DatePicker,
+  DatePicker,
   // TimeSelect,
   // TimePicker,
   Popover,
@@ -41,17 +41,17 @@ import {
   // BreadcrumbItem,
   Form,
   FormItem,
-  // Tabs,
-  // TabPane,
-  // Tag,
+  Tabs,
+  TabPane,
+  Tag,
   Tree,
-  // Alert,
+  Alert,
   // Slider,
   // Icon,
   Row,
   Col,
   // Upload,
-  // Progress,
+  Progress,
   Badge,
   Card,
   // Rate,
@@ -62,6 +62,7 @@ import {
   // Collapse,
   // CollapseItem,
   // Cascader,
+  CascaderPanel,
   ColorPicker,
   // Transfer,
   // Container,
@@ -100,12 +101,12 @@ export default (Vue: typeof _Vue) => {
   Vue.use(Switch)
   Vue.use(Select)
   Vue.use(Option)
-  // Vue.use(OptionGroup)
+  Vue.use(OptionGroup)
   Vue.use(Button)
   // Vue.use(ButtonGroup)
   // Vue.use(Table)
   // Vue.use(TableColumn)
-  // Vue.use(DatePicker)
+  Vue.use(DatePicker)
   // Vue.use(TimeSelect)
   // Vue.use(TimePicker)
   Vue.use(Popover)
@@ -114,17 +115,17 @@ export default (Vue: typeof _Vue) => {
   // Vue.use(BreadcrumbItem)
   Vue.use(Form)
   Vue.use(FormItem)
-  // Vue.use(Tabs)
-  // Vue.use(TabPane)
-  // Vue.use(Tag)
+  Vue.use(Tabs)
+  Vue.use(TabPane)
+  Vue.use(Tag)
   Vue.use(Tree)
-  // Vue.use(Alert)
+  Vue.use(Alert)
   // Vue.use(Slider)
   // Vue.use(Icon)
   Vue.use(Row)
   Vue.use(Col)
   // Vue.use(Upload)
-  // Vue.use(Progress)
+  Vue.use(Progress)
   Vue.use(Badge)
   Vue.use(Card)
   // Vue.use(Rate)
@@ -135,6 +136,7 @@ export default (Vue: typeof _Vue) => {
   // Vue.use(Collapse)
   // Vue.use(CollapseItem)
   // Vue.use(Cascader)
+  Vue.use(CascaderPanel)
   Vue.use(ColorPicker)
   // Vue.use(Transfer)
   // Vue.use(Container)
@@ -146,7 +148,7 @@ export default (Vue: typeof _Vue) => {
 
   Vue.use(Loading.directive)
 
-  // Vue.prototype.$loading = Loading.service
+  Vue.prototype.$loading = Loading.service
   // Vue.prototype.$msgbox = MessageBox
   // Vue.prototype.$alert = MessageBox.alert
   Vue.prototype.$confirm = MessageBox.confirm

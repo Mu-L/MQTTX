@@ -1,3 +1,5 @@
+@import '~@/assets/scss/variable.scss';
+
 /* Divider */
 .el-divider {
   background-color: var(--color-border-default);
@@ -40,6 +42,9 @@
 }
 .el-card.is-hover-shadow:hover {
   box-shadow: 0 2px 12px 0 var(--color-shadow-card);
+}
+.el-card__header {
+  border-bottom: 1px solid var(--color-border-default);
 }
 
 /* Form */
@@ -177,6 +182,15 @@
 .el-dialog {
   background: var(--color-bg-normal);
   border-radius: 8px;
+  .el-dialog__header {
+    padding: 0 20px;
+    line-height: 56px;
+    border-bottom: 1px solid var(--color-border-default);
+    .el-dialog__title {
+      color: var(--color-text-title);
+      font-size: $font-size--subtitle;
+    }
+  }
 }
 
 /* Input */
@@ -191,6 +205,7 @@
   }
   &.is-disabled .el-input__inner {
     border-color: var(--color-border-default);
+    background-color: var(--color-bg-normal);
   }
 }
 .el-textarea {
@@ -223,6 +238,8 @@
 .el-popper {
   background: var(--color-bg-messagebox);
   border-color: var(--color-border-default);
+  word-break: break-word;
+  color: var(--color-text-default);
   li {
     color: var(--color-text-default);
   }
@@ -245,10 +262,16 @@
     border-top-color: var(--color-bg-messagebox);
   }
 }
+
+/* Select Dropdown Item */
 .el-select-dropdown__item.hover,
 .el-select-dropdown__item:hover {
   background: var(--color-bg-item);
 }
+.el-select-dropdown__item.selected {
+  font-weight: 500;
+}
+
 // Fix css style bug in open el-dialog
 .el-popup-parent--hidden {
   padding-right: 0px !important;
@@ -256,7 +279,7 @@
 
 /* Tootip */
 .el-tooltip__popper.is-light {
-  color: var(--color-text-light);
+  color: var(--color-text-right_block);
 }
 
 /* Color picker */
@@ -294,15 +317,13 @@
   margin-top: 6px;
   border-top: 1px solid var(--color-border-default);
 }
+.el-dropdown-menu__item.is-disabled {
+  color: var(--color-text-tips);
+}
 
 /* Loading */
 .el-loading-mask {
   background-color: var(--color-bg-primary);
-}
-
-/* Tree */
-.el-tree-node__content > .el-tree-node__expand-icon {
-  padding: 3px;
 }
 
 /* Skeleton */
@@ -322,5 +343,138 @@
     100% {
       background-position: 0 50%;
     }
+  }
+}
+
+/* Tag */
+.el-tag {
+  &.el-tag--info {
+    background-color: transparent;
+    border-color: var(--color-border-default);
+    color: var(--color-text-tips);
+  }
+}
+
+/* Progress */
+.el-progress {
+  .el-progress-bar__outer {
+    background-color: var(--color-bg-code);
+    border-radius: 4px;
+    .el-progress-bar__inner {
+      border-radius: 4px;
+    }
+  }
+  .el-progress__text {
+    color: var(--color-text-default);
+  }
+}
+
+/* Tabs */
+.el-tabs {
+  .el-tabs__item {
+    color: var(--color-text-title);
+    &.is-active {
+      color: var(--color-main-green);
+    }
+  }
+  .el-tabs__nav-wrap::after {
+    background-color: var(--color-border-default);
+  }
+}
+
+/* Date-picker */
+.el-range-editor {
+  &.el-input__inner {
+    background-color: var(--color-bg-normal);
+    border: 1px solid var(--color-border-default);
+  }
+
+  .el-range-input {
+    color: var(--color-text-default);
+    background-color: var(--color-bg-normal);
+  }
+
+  .el-range-separator {
+    color: var(--color-text-default);
+  }
+}
+
+.el-date-table {
+  th {
+    color: var(--color-text-default);
+    border-bottom: 1px solid var(--color-border-default);
+  }
+
+  td {
+    &.start-date,
+    &.end-date {
+      div {
+        background-color: var(--color-bg-code);
+      }
+    }
+
+    &.in-range div {
+      background-color: var(--color-bg-code);
+    }
+
+    &.disabled div {
+      background-color: var(--color-bg-normal);
+    }
+  }
+}
+
+.el-picker-panel {
+  &__sidebar,
+  *[slot='sidebar'] {
+    background-color: var(--color-bg-messagebox);
+    border-right: 1px solid var(--color-border-default);
+  }
+
+  &__shortcut {
+    color: var(--color-text-default);
+  }
+
+  &__footer {
+    border-top: 1px solid var(--color-border-default);
+    background-color: var(--color-bg-messagebox);
+  }
+
+  &__icon-btn {
+    color: var(--color-text-default);
+  }
+}
+
+.el-date-range-picker {
+  &__time-header {
+    border-bottom: 1px solid var(--color-border-default);
+
+    > .el-icon-arrow-right {
+      color: var(--color-text-default);
+    }
+  }
+
+  &__content.is-left {
+    border-right: 1px solid var(--color-border-default);
+  }
+}
+
+.el-time-spinner__item {
+  &.active:not(.disabled) {
+    color: var(--color-main-green);
+  }
+
+  &:hover {
+    background-color: transparent !important;
+    color: var(--color-main-green) !important;
+  }
+}
+
+.el-time-panel {
+  &__btn {
+    color: var(--color-text-default);
+  }
+
+  &__footer {
+    border-top: 1px solid var(--color-border-default);
   }
 }

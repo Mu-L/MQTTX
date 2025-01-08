@@ -1,5 +1,4 @@
 import fs from 'fs'
-import { Notification } from 'element-ui'
 
 export const getSSLFile = (sslPath: SSLPath): SSLContent | undefined => {
   const { ca, cert, key } = sslPath
@@ -11,11 +10,7 @@ export const getSSLFile = (sslPath: SSLPath): SSLContent | undefined => {
     }
     return res
   } catch (error) {
-    Notification({
-      title: error.toString(),
-      message: '',
-      type: 'error',
-    })
+    throw error
   }
 }
 

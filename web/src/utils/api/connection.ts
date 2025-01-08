@@ -1,5 +1,4 @@
 import db from '@/database/index'
-import { ConnectionModel, MessageModel } from '@/views/connections/types'
 
 export const loadConnection = (id: string): ConnectionModel => {
   return db.find<ConnectionModel>('connections', id)
@@ -43,6 +42,16 @@ export const updateConnection = (id: string, data: ConnectionModel): ConnectionM
 export const updateConnectionMessage = (id: string, message: MessageModel): ConnectionModel => {
   const connection: ConnectionModel = loadConnection(id)
   connection.messages.push(message)
+  return db.update<ConnectionModel>('connections', id, connection)
+}
+
+export const getConnectionPushProp = (id: string): MessageModel['properties'] => {
+  return db.find<ConnectionModel>('connections', id)?.pushProps
+}
+
+export const updateConnectionPushProp = (id: string, properties: MessageModel['properties']): ConnectionModel => {
+  const connection: ConnectionModel = loadConnection(id)
+  properties && (connection.pushProps = properties)
   return db.update<ConnectionModel>('connections', id, connection)
 }
 

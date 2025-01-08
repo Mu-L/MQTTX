@@ -4,6 +4,7 @@
     :visible.sync="showDialog"
     class="export-data"
     width="350px"
+    :confirmLoading="confirmLoading"
     @confirm="exportData"
     @close="resetData"
     @keyupEnter="exportData"
@@ -13,7 +14,11 @@
         <el-col :span="24">
           <el-form-item :label="$t('connections.exportFormat')" prop="exportFormat">
             <el-select size="small" v-model="record.exportFormat">
-              <el-option v-for="(format, index) in ['JSON', 'CSV', 'XML', 'Excel']" :key="index" :value="format">
+              <el-option
+                v-for="(format, index) in ['JSON', 'YAML', 'CSV', 'XML', 'Excel']"
+                :key="index"
+                :value="format"
+              >
               </el-option>
             </el-select>
           </el-form-item>
@@ -45,11 +50,13 @@ import { Getter } from 'vuex-class'
 import { ipcRenderer } from 'electron'
 import useService from '@/database/useServices'
 import MyDialog from './MyDialog.vue'
+import YAML from 'js-yaml'
 import XMLConvert from 'xml-js'
 import { parse as CSVConvert } from 'json2csv'
 import ExcelConvert, { WorkBook } from 'xlsx'
+import { replaceSpecialDataTypes } from '@/utils/exportData'
 
-type ExportFormat = 'JSON' | 'XML' | 'CSV' | 'Excel'
+type ExportFormat = 'JSON' | 'YAML' | 'XML' | 'CSV' | 'Excel'
 
 interface ExportForm {
   exportFormat: ExportFormat
@@ -68,6 +75,7 @@ export default class ExportData extends Vue {
   @Prop({ default: false }) public visible!: boolean
 
   private showDialog: boolean = this.visible
+  private confirmLoading: boolean = false
   private record: ExportForm = {
     exportFormat: 'JSON',
     allConnections: false,
@@ -82,6 +90,9 @@ export default class ExportData extends Vue {
     switch (this.record.exportFormat) {
       case 'JSON':
         this.exportJSONData()
+        break
+      case 'YAML':
+        this.exportYAMLData()
         break
       case 'XML':
         this.exportXMLData()
@@ -112,20 +123,24 @@ export default class ExportData extends Vue {
     })
   }
 
-  private async getStringifyContent(): Promise<string> {
-    let connections: ConnectionModel[] | ConnectionModel = []
+  private async getContent() {
+    const { connectionService } = useService()
+    let connections: ConnectionModel[] = []
     if (!this.record.allConnections) {
-      const { ...connection } = this.connection
-      const data = [connection]
-      connections = data[0]
+      connections = await connectionService.cascadeGetAll(this.connection.id)
     } else {
-      const { connectionService } = useService()
-      connections = (await connectionService.getAll()) ?? []
+      connections = await connectionService.cascadeGetAll()
     }
+    return connections
+  }
+
+  private async getStringifyContent() {
+    const connections = await this.getContent()
     return JSON.stringify(connections, null, 2)
   }
 
   private exportJSONData() {
+    this.confirmLoading = true
     this.getStringifyContent()
       .then((content) => {
         if (content === '[]') {
@@ -137,61 +152,86 @@ export default class ExportData extends Vue {
       .catch((err) => {
         this.$message.error(err.toString())
       })
+      .finally(() => {
+        this.confirmLoading = false
+      })
+  }
+
+  private exportYAMLData() {
+    this.confirmLoading = true
+    this.getContent()
+      .then((content) => {
+        if (!content.length) {
+          this.$message.warning(this.$tc('common.noData'))
+          return
+        }
+        const yamlContent = YAML.dump(content)
+        this.exportDiffFormatData(yamlContent, 'YAML')
+      })
+      .catch((err) => {
+        this.$message.error(err.toString())
+      })
+      .finally(() => {
+        this.confirmLoading = false
+      })
   }
 
   private async exportExcelData() {
-    const { connectionService } = useService()
-    const query = (await connectionService.getAll()) ?? []
-    const data: ConnectionModel[] | [] = !this.record.allConnections ? [this.connection] : query
-    if (data) {
-      const fileName = !this.record.allConnections ? this.connection.name : 'data'
-      const saveExcelData = (workbook: WorkBook) => {
-        let filename = this.$t('connections.allConnections')
-        if (!this.record.allConnections) {
-          filename = this.connection.name
-          ipcRenderer.send('exportData', filename, workbook)
-        } else {
-          ipcRenderer.send('exportData', 'data', workbook)
-        }
-        ipcRenderer.on('saved', () => {
-          this.$message.success(`${filename} ${this.$t('common.exportSuccess')}`)
-          this.resetData()
-        })
+    const saveExcelData = (workbook: WorkBook) => {
+      let filename = this.$t('connections.allConnections')
+      if (!this.record.allConnections) {
+        filename = this.connection.name
+        ipcRenderer.send('exportData', filename, workbook)
+      } else {
+        ipcRenderer.send('exportData', 'data', workbook)
       }
-
-      if (!data.length) {
-        this.$message.warning(this.$tc('common.noData'))
-        return
-      }
-      const jsonContent = data
-      const sheet = ExcelConvert.utils.json_to_sheet(jsonContent)
-      Object.keys(sheet).forEach((item) => {
-        // format nested object/array to string
-        if (sheet[item].t === undefined && item !== '!ref') {
-          const stringValue = JSON.stringify(sheet[item])
-          sheet[item] = { t: 's', v: stringValue }
-        }
+      ipcRenderer.on('saved', () => {
+        this.$message.success(`${filename} ${this.$t('common.exportSuccess')}`)
+        this.resetData()
       })
-      const newWorkBook = ExcelConvert.utils.book_new()
-      ExcelConvert.utils.book_append_sheet(newWorkBook, sheet)
-      saveExcelData(newWorkBook)
     }
+    this.confirmLoading = true
+    this.getContent()
+      .then((content) => {
+        if (!content.length) {
+          this.$message.warning(this.$tc('common.noData'))
+          return
+        }
+        const fileName = !this.record.allConnections ? this.connection.name : 'data'
+        const sheet = ExcelConvert.utils.json_to_sheet(content)
+        Object.keys(sheet).forEach((item) => {
+          // format nested object/array to string
+          if (sheet[item].t === undefined && item !== '!ref') {
+            const stringValue = JSON.stringify(sheet[item])
+            sheet[item] = { t: 's', v: stringValue }
+          }
+        })
+        const newWorkBook = ExcelConvert.utils.book_new()
+        ExcelConvert.utils.book_append_sheet(newWorkBook, sheet)
+        saveExcelData(newWorkBook)
+      })
+      .catch((err) => {
+        this.$message.error(err.toString())
+      })
+      .finally(() => {
+        this.confirmLoading = false
+      })
   }
 
   private exportXMLData() {
     const exportDataToXML = (jsonContent: string) => {
-      // avoid messages: [] & subscriptions: [] being discarded
-      jsonContent = jsonContent.replace(/\[\]/g, '""')
-      const XMLOptions = { compact: true, ignoreComment: true, spaces: 2 }
       try {
-        let content = XMLConvert.json2xml(jsonContent, XMLOptions)
+        let content = replaceSpecialDataTypes(jsonContent)
+        content = XMLConvert.json2xml(content, { compact: true, ignoreComment: true, spaces: 2 })
         content = '<?xml version="1.0" encoding="utf-8"?>\n<root>\n'.concat(content).concat('\n</root>')
         content = content.replace(/<([0-9]*)>/g, '<oneConnection>').replace(/<(\/[0-9]*)>/g, '</oneConnection>')
         this.exportDiffFormatData(content, 'XML')
       } catch (err) {
-        this.$message.error(err.toString())
+        const error = err as Error
+        this.$message.error(error.toString())
       }
     }
+    this.confirmLoading = true
     this.getStringifyContent()
       .then((content) => {
         if (content === '[]') {
@@ -203,27 +243,39 @@ export default class ExportData extends Vue {
       .catch((err) => {
         this.$message.error(err.toString())
       })
+      .finally(() => {
+        this.confirmLoading = false
+      })
   }
 
-  private async exportCSVData() {
-    const { connectionService } = useService()
-    const exportDataToCSV = (jsonContent: ConnectionModel[]) => {
+  private exportCSVData() {
+    const exportDataToCSV = (jsonContent: string) => {
       try {
-        const content: string = CSVConvert(jsonContent)
+        let content = replaceSpecialDataTypes(jsonContent)
+        // Prevent CSV from automatically converting string with trailing zeros after decimal point to number.
+        // https://stackoverflow.com/questions/165042/stop-excel-from-automatically-converting-certain-text-values-to-dates
+        content = CSVConvert(JSON.parse(content)).replace(/"(\d+\.(\d+)?0)"/g, '="$1"')
         this.exportDiffFormatData(content, 'CSV')
       } catch (err) {
-        this.$message.error(err.toString())
+        const error = err as Error
+        this.$message.error(error.toString())
       }
     }
-    const data: ConnectionModel[] | undefined = !this.record.allConnections
-      ? [this.connection]
-      : await connectionService.getAll()
-    if (!data || !data.length) {
-      this.$message.warning(this.$tc('common.noData'))
-      return
-    }
-    const jsonContent = data
-    exportDataToCSV(jsonContent)
+    this.confirmLoading = true
+    this.getStringifyContent()
+      .then((content) => {
+        if (content === '[]') {
+          this.$message.warning(this.$tc('common.noData'))
+          return
+        }
+        exportDataToCSV(content)
+      })
+      .catch((err) => {
+        this.$message.error(err.toString())
+      })
+      .finally(() => {
+        this.confirmLoading = false
+      })
   }
 
   private resetData() {

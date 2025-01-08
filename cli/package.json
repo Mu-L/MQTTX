@@ -1,7 +1,7 @@
 {
   "name": "mqttx-cli",
-  "version": "1.8.1",
-  "description": "MQTT X Command Line Tools",
+  "version": "1.11.1",
+  "description": "MQTTX Command Line Tools",
   "keywords": [
     "mqtt",
     "publish/subscribe",
@@ -10,41 +10,74 @@
   ],
   "scripts": {
     "dev": "tsc -w",
-    "build": "tsc"
+    "build": "tsc",
+    "test": "jest",
+    "test:coverage": "jest --coverage"
   },
   "main": "./dist/src/index.js",
   "bin": {
     "mqttx": "./bin/index.js"
   },
   "license": "Apache-2.0",
+  "engines": {
+    "node": "18"
+  },
   "dependencies": {
+    "@faker-js/faker": "^8.1.0",
+    "@inquirer/prompts": "^5.0.3",
+    "avsc": "^5.7.7",
+    "cbor": "^9.0.1",
+    "chalk": "~4.1.2",
+    "cli-table3": "^0.6.3",
     "commander": "^9.3.0",
+    "compare-versions": "^5.0.1",
     "concat-stream": "^2.0.0",
+    "core-js": "^3.26.0",
+    "ini": "^4.1.2",
+    "js-yaml": "^4.1.0",
+    "json-bigint": "^1.0.0",
+    "lodash": "^4.17.21",
     "mqtt": "^4.3.7",
+    "msgpackr": "^1.11.0",
+    "ora": "^5.4.1",
+    "protobufjs": "^7.2.3",
     "pump": "^3.0.0",
     "readable-stream": "^3.6.0",
+    "signale": "^1.4.0",
     "split2": "^4.1.0"
   },
   "devDependencies": {
     "@types/concat-stream": "^2.0.0",
+    "@types/debug": "^4.1.12",
+    "@types/ini": "^4.1.0",
+    "@types/jest": "^29.5.12",
+    "@types/js-yaml": "^4.0.5",
+    "@types/json-bigint": "^1.0.4",
+    "@types/lodash": "^4.17.1",
     "@types/node": "^17.0.43",
     "@types/pump": "^1.1.1",
     "@types/readable-stream": "^2.3.13",
+    "@types/signale": "^1.4.4",
     "@types/split2": "^3.2.1",
     "@types/ws": "^8.5.3",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
     "typescript": "^4.7.3"
   },
   "pkg": {
     "targets": [
-      "node14-linux-x64",
-      "node14-macos-x64",
-      "node14-win-x64",
-      "node14-alpine-x64",
-      "node14-linux-arm64",
-      "node14-macos-arm64",
-      "node14-win-arm64",
-      "node14-alpine-arm64"
+      "node18-linux-x64",
+      "node18-macos-x64",
+      "node18-win-x64",
+      "node18-alpine-x64",
+      "node18-linux-arm64",
+      "node18-macos-arm64",
+      "node18-win-arm64",
+      "node18-alpine-arm64"
     ],
-    "outputPath": "release"
+    "outputPath": "release",
+    "scripts": [
+      "dist/src/scenarios/**/*"
+    ]
   }
 }

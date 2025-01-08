@@ -15,6 +15,9 @@
             <a class="web-link" href="https://github.com/emqx/MQTTX/issues" target="_blank" rel="noopener noreferrer">
               {{ $t('about.support') }}
             </a>
+            <a class="web-link" href="javascript:;" @click="openDataCollectionPolicyDialog()">
+              {{ $t('about.dataCollectionPolicy') }}
+            </a>
           </p>
           <div class="description">
             <p>{{ $t('about.mqttxDesc') }}</p>
@@ -45,12 +48,13 @@
           <div class="emq-logo">
             <img :src="emqLogoSrc" alt="emqx" width="40" />
             <span class="copyright">
-              &copy;2022 <a :href="emqWebsite" target="_blank" rel="noopener noreferrer">EMQ</a> Technologies Inc.
+              &copy;{{ fullYear }} <a :href="emqWebsite" target="_blank" rel="noopener noreferrer">EMQ</a> Technologies
+              Inc.
             </span>
           </div>
           <div class="follow-items">
             <a target="_blank" rel="noopener noreferrer" class="follow-link" href="https://twitter.com/EMQTech">
-              <i class="iconfont icon-ttww"></i>
+              <i class="iconfont icon-x"></i>
             </a>
             <a target="_blank" rel="noopener noreferrer" class="follow-link" href="https://discord.gg/xYGf3fQnES">
               <i class="iconfont icon-discord"></i>
@@ -68,21 +72,34 @@
         </div>
       </div>
     </div>
+
+    <DataCollectionPolicy :visible.sync="showDataCollectionPolicyDialog" />
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator'
 import { Getter } from 'vuex-class'
+import DataCollectionPolicy from '@/components/DataCollectionPolicy.vue'
 
-@Component
+@Component({
+  components: {
+    DataCollectionPolicy,
+  },
+})
 export default class About extends Vue {
   @Getter('currentTheme') private getterTheme!: Theme
   @Getter('currentLang') private getterLang!: Language
 
   private baseUrl = 'https://www.emqx.com'
-  private utm = '?utm_source=emqx.io&utm_medium=referral&utm_campaign='
+  private utm = '?utm_source=emqx.com&utm_medium=referral&utm_campaign='
   private version = `${process.env.VUE_APP_VERSION}`
+
+  private showDataCollectionPolicyDialog = false
+
+  get fullYear(): number {
+    return new Date().getFullYear()
+  }
 
   get mqttxLogoSrc(): string {
     if (this.getterTheme === 'light') {
@@ -109,7 +126,7 @@ export default class About extends Vue {
   }
 
   get emqxIoWebsite(): string {
-    const baseUrl = 'https://www.emqx.io/'
+    const baseUrl = 'https://www.emqx.com/'
     const lang = this.getterLang === 'zh' ? 'zh' : 'en'
     if (lang === 'zh') {
       return `${baseUrl}zh${this.utm}mqttx-web-to-broker`
@@ -131,6 +148,10 @@ export default class About extends Vue {
     if (windowUrl) {
       windowUrl.opener = null
     }
+  }
+
+  private openDataCollectionPolicyDialog() {
+    this.showDataCollectionPolicyDialog = true
   }
 }
 </script>

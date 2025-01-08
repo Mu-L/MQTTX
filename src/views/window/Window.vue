@@ -1,8 +1,10 @@
 <template>
   <div class="window connections">
-    <div class="left-list">
-      <ConnectionsList :ConnectionModelData="records" :connectionId="connectionId" />
-    </div>
+    <transition name="slide">
+      <div v-show="showConnectionList" class="left-list">
+        <ConnectionsList ref="connectionList" />
+      </div>
+    </transition>
     <div class="connections-view">
       <ConnectionsDetail ref="ConnectionsDetail" :record="currentConnection" @reload="handleReload" />
     </div>
@@ -15,6 +17,7 @@ import ConnectionsDetail from '@/views/connections/ConnectionsDetail.vue'
 import ConnectionsList from '@/views/connections/ConnectionsList.vue'
 import useServices from '@/database/useServices'
 import { getDefaultRecord } from '@/utils/mqttUtils'
+import { Getter } from 'vuex-class'
 
 @Component({
   components: {
@@ -23,6 +26,8 @@ import { getDefaultRecord } from '@/utils/mqttUtils'
   },
 })
 export default class Window extends Vue {
+  @Getter('showConnectionList') private showConnectionList!: boolean
+
   private records: ConnectionModel[] = []
   private currentConnection: ConnectionModel = { ...getDefaultRecord() }
 
@@ -32,6 +37,7 @@ export default class Window extends Vue {
 
   private handleReload(loadLatest: boolean, firstLoad: boolean, callback?: () => {}) {
     this.loadDetail(this.connectionId, true, callback)
+    this.refreshConnectionList()
   }
 
   private async loadDetail(id: string, reload?: boolean, callback?: () => {}): Promise<void> {
@@ -45,6 +51,11 @@ export default class Window extends Vue {
       }
     }
     callback && callback()
+  }
+
+  private refreshConnectionList(firstLoad = false) {
+    const connectionListRef = this.$refs.connectionList as ConnectionsList
+    connectionListRef.loadData(firstLoad)
   }
 
   created() {

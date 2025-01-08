@@ -1,6 +1,16 @@
 <template>
-  <div class="connection-form right-content card-form">
-    <div class="right-topbar topbar">
+  <div
+    class="connection-form right-content card-form"
+    :style="{
+      marginLeft: leftValue,
+    }"
+  >
+    <div
+      class="right-topbar topbar"
+      :style="{
+        left: leftValue,
+      }"
+    >
       <div class="header">
         <a href="javascript:;" @click="handleBack($route.params.id)">
           <i class="el-icon-arrow-left"></i>{{ $t('common.back') }}
@@ -10,9 +20,19 @@
         <h2>{{ oper === 'create' ? $t('common.new') : $t('common.edit') }}</h2>
       </div>
       <div class="tail">
-        <a href="javascript:;" @click="save">
+        <a href="javascript:;" @click="handleSave('connect')" class="connect-btn">
           {{ $t('connections.connectBtn') }}
         </a>
+        <el-dropdown trigger="click" @command="handleActionCommand">
+          <a href="javascript:;">
+            <i class="el-icon-arrow-down"></i>
+          </a>
+          <el-dropdown-menu class="connection-oper-item" slot="dropdown">
+            <el-dropdown-item command="save">
+              <i class="iconfont icon-save"></i>{{ $t('common.saveOnly') }}
+            </el-dropdown-item>
+          </el-dropdown-menu>
+        </el-dropdown>
       </div>
     </div>
 
@@ -52,8 +72,37 @@
               </el-tooltip>
             </el-col>
             <el-col :span="22">
+              <el-form-item class="host-item" label-width="93px" :label="$t('connections.brokerIP')" prop="host">
+                <el-col :span="6">
+                  <el-select size="mini" v-model="record.protocol" @change="handleProtocol">
+                    <el-option label="mqtt://" value="mqtt"></el-option>
+                    <el-option label="mqtts://" value="mqtts"></el-option>
+                    <el-option label="ws://" value="ws"></el-option>
+                    <el-option label="wss://" value="wss"></el-option>
+                  </el-select>
+                </el-col>
+                <el-col :span="18">
+                  <el-input size="mini" v-model.trim="record.host"> </el-input>
+                </el-col>
+              </el-form-item>
+            </el-col>
+            <el-col :span="2"></el-col>
+            <el-col :span="22">
+              <el-form-item label-width="93px" :label="$t('connections.brokerPort')" prop="port">
+                <el-input-number
+                  size="mini"
+                  type="number"
+                  :min="0"
+                  :max="65535"
+                  v-model="record.port"
+                  controls-position="right"
+                >
+                </el-input-number>
+              </el-form-item>
+            </el-col>
+            <el-col :span="22">
               <el-form-item label-width="93px" label="Client ID" prop="clientId">
-                <el-input size="mini" v-model="record.clientId"></el-input>
+                <el-input size="mini" v-model="record.clientId" clearable></el-input>
               </el-form-item>
             </el-col>
             <el-col :span="1">
@@ -80,36 +129,6 @@
                 </a>
               </el-tooltip>
             </el-col>
-            <el-col :span="22">
-              <el-form-item class="host-item" label-width="93px" :label="$t('connections.brokerIP')" prop="host">
-                <el-col :span="6">
-                  <el-select size="mini" v-model="record.protocol">
-                    <el-option label="mqtt://" value="mqtt" :disabled="record.ssl"></el-option>
-                    <el-option label="mqtts://" value="mqtts"></el-option>
-                    <el-option label="ws://" value="ws" :disabled="record.ssl"></el-option>
-                    <el-option label="wss://" value="wss"></el-option>
-                  </el-select>
-                </el-col>
-                <el-col :span="18">
-                  <el-input size="mini" v-model.trim="record.host"> </el-input>
-                </el-col>
-              </el-form-item>
-            </el-col>
-            <el-col :span="2"></el-col>
-            <el-col :span="22">
-              <el-form-item label-width="93px" :label="$t('connections.brokerPort')" prop="port">
-                <el-input-number
-                  size="mini"
-                  type="number"
-                  :min="0"
-                  :max="65535"
-                  v-model="record.port"
-                  controls-position="right"
-                >
-                </el-input-number>
-              </el-form-item>
-            </el-col>
-
             <template v-if="record.protocol === 'ws' || record.protocol === 'wss'">
               <el-col :span="22">
                 <el-form-item label-width="93px" label="Path" prop="path">
@@ -122,13 +141,13 @@
             <el-col :span="2"></el-col>
             <el-col :span="22">
               <el-form-item label-width="93px" :label="$t('connections.username')" prop="username">
-                <el-input size="mini" v-model.trim="record.username"></el-input>
+                <el-input size="mini" clearable v-model.trim="record.username"></el-input>
               </el-form-item>
             </el-col>
             <el-col :span="2"></el-col>
             <el-col :span="22">
               <el-form-item label-width="93px" :label="$t('connections.password')" prop="password">
-                <el-input type="password" size="mini" v-model.trim="record.password"></el-input>
+                <el-input type="password" clearable size="mini" v-model.trim="record.password"></el-input>
               </el-form-item>
             </el-col>
             <el-col :span="2"></el-col>
@@ -139,17 +158,7 @@
               </el-form-item>
             </el-col>
             <el-col :span="2"></el-col>
-
             <template v-if="record.ssl">
-              <el-col :span="22">
-                <el-form-item label-width="93px" :label="$t('connections.certType')" prop="certType">
-                  <el-radio-group v-model="record.certType">
-                    <el-radio label="server">CA signed server</el-radio>
-                    <el-radio label="self">Self signed</el-radio>
-                  </el-radio-group>
-                </el-form-item>
-              </el-col>
-              <el-col :span="2"></el-col>
               <el-col :span="22">
                 <el-form-item
                   class="item-secure"
@@ -173,7 +182,22 @@
                   </el-tooltip>
                 </el-form-item>
               </el-col>
-              <el-col :span="2"> </el-col>
+              <el-col :span="2"></el-col>
+              <el-col :span="22">
+                <el-form-item label-width="93px" label="ALPN" prop="ALPNProtocols">
+                  <el-input size="mini" clearable v-model.trim="record.ALPNProtocols"></el-input>
+                </el-form-item>
+              </el-col>
+              <el-col :span="2"></el-col>
+              <el-col :span="22">
+                <el-form-item label-width="93px" :label="$t('connections.certType')" prop="certType">
+                  <el-radio-group v-model="record.certType">
+                    <el-radio label="server">CA signed server certificate</el-radio>
+                    <el-radio label="self">CA or Self signed certificates</el-radio>
+                  </el-radio-group>
+                </el-form-item>
+              </el-col>
+              <el-col :span="2"></el-col>
             </template>
           </el-row>
         </el-card>
@@ -188,7 +212,7 @@
               <el-row :gutter="10">
                 <el-col :span="22">
                   <el-form-item :label="$t('connections.ca')" prop="ca">
-                    <el-input size="mini" v-model="record.ca"></el-input>
+                    <el-input size="mini" v-model="record.ca" clearable></el-input>
                   </el-form-item>
                 </el-col>
                 <el-col :span="2">
@@ -198,7 +222,7 @@
                 </el-col>
                 <el-col :span="22">
                   <el-form-item :label="$t('connections.cert')" prop="cert">
-                    <el-input size="mini" v-model="record.cert"></el-input>
+                    <el-input size="mini" v-model="record.cert" clearable></el-input>
                   </el-form-item>
                 </el-col>
                 <el-col :span="2">
@@ -208,7 +232,7 @@
                 </el-col>
                 <el-col :span="22">
                   <el-form-item :label="$t('connections.key')" prop="key">
-                    <el-input size="mini" v-model="record.key"></el-input>
+                    <el-input size="mini" v-model="record.key" clearable></el-input>
                   </el-form-item>
                 </el-col>
                 <el-col :span="2">
@@ -236,6 +260,16 @@
         <el-collapse-transition>
           <el-card v-show="advancedVisible" shadow="never" class="info-body item-card">
             <el-row :gutter="10">
+              <el-col :span="22">
+                <el-form-item :label="$t('connections.mqttVersion')" prop="mqttVersion">
+                  <el-select size="mini" v-model="record.mqttVersion">
+                    <el-option value="3.1" label="3.1"></el-option>
+                    <el-option value="3.1.1" label="3.1.1"></el-option>
+                    <el-option value="5.0" label="5.0"></el-option>
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :span="2"></el-col>
               <el-col :span="22">
                 <el-form-item :label="$t('connections.connectionTimeout')" prop="connectTimeout">
                   <el-input-number
@@ -267,20 +301,8 @@
                 ><div class="unit">({{ $t('common.unitS') }})</div></el-col
               >
               <el-col :span="22">
-                <el-form-item :label="$t('connections.cleanSession')" prop="clean">
-                  <el-radio-group v-model="record.clean">
-                    <el-radio :label="true"></el-radio>
-                    <el-radio :label="false"></el-radio>
-                  </el-radio-group>
-                </el-form-item>
-              </el-col>
-              <el-col :span="2"></el-col>
-              <el-col :span="22">
                 <el-form-item :label="$t('connections.autoReconnect')" prop="reconnect">
-                  <el-radio-group v-model="record.reconnect">
-                    <el-radio :label="true"></el-radio>
-                    <el-radio :label="false"></el-radio>
-                  </el-radio-group>
+                  <el-switch v-model="record.reconnect" active-color="#13ce66" inactive-color="#A2A9B0"> </el-switch>
                 </el-form-item>
               </el-col>
               <el-col :span="2"></el-col>
@@ -302,24 +324,26 @@
                 </el-col>
               </template>
               <el-col :span="22">
-                <el-form-item :label="$t('connections.mqttVersion')" prop="mqttVersion">
-                  <el-select size="mini" v-model="record.mqttVersion">
-                    <el-option value="3.1" label="3.1"></el-option>
-                    <el-option value="3.1.1" label="3.1.1"></el-option>
-                    <el-option value="5.0" label="5.0"></el-option>
-                  </el-select>
+                <el-form-item :label="record.mqttVersion === '5.0' ? 'Clean Start' : 'Clean Session'" prop="clean">
+                  <el-switch
+                    v-model="record.clean"
+                    active-color="#13ce66"
+                    inactive-color="#A2A9B0"
+                    @change="handleClean"
+                  >
+                  </el-switch>
                 </el-form-item>
               </el-col>
               <el-col :span="2"></el-col>
-
-              <!-- MQTT v5.0 -->
               <template v-if="record.mqttVersion === '5.0'">
                 <el-col :span="22">
                   <el-form-item :label="$t('connections.sessionExpiryInterval')" prop="sessionExpiryInterval">
                     <el-input
                       size="mini"
                       type="number"
-                      :min="1"
+                      :min="0"
+                      :placeholder="$t('common.neverExpire')"
+                      clearable
                       v-model.number="record.properties.sessionExpiryInterval"
                     >
                     </el-input>
@@ -328,42 +352,68 @@
                 <el-col :span="2">
                   <div class="unit">({{ $t('common.unitS') }})</div>
                 </el-col>
+              </template>
+
+              <!-- MQTT v5.0 -->
+              <template v-if="record.mqttVersion === '5.0'">
                 <el-col :span="22">
                   <el-form-item :label="$t('connections.receiveMaximum')" prop="receiveMaximum">
-                    <el-input size="mini" type="number" :min="1" v-model.number="record.properties.receiveMaximum">
+                    <el-input
+                      size="mini"
+                      type="number"
+                      :min="1"
+                      clearable
+                      v-model.number="record.properties.receiveMaximum"
+                    >
                     </el-input>
                   </el-form-item>
                 </el-col>
-                <el-col :span="2"><div class="unit">(Byte)</div></el-col>
+                <el-col :span="2"></el-col>
                 <el-col :span="22">
                   <el-form-item :label="$t('connections.maximumPacketSize')" prop="maximumPacketSize">
-                    <el-input size="mini" type="number" :min="100" v-model.number="record.properties.maximumPacketSize">
+                    <el-input
+                      size="mini"
+                      type="number"
+                      :min="100"
+                      clearable
+                      v-model.number="record.properties.maximumPacketSize"
+                    >
                     </el-input>
                   </el-form-item>
                 </el-col>
-                <el-col :span="2"><div class="unit">(Byte)</div></el-col>
+                <el-col :span="2"></el-col>
                 <el-col :span="22">
                   <el-form-item :label="$t('connections.topicAliasMaximum')" prop="topicAliasMaximum">
-                    <el-input size="mini" type="number" :min="1" v-model.number="record.properties.topicAliasMaximum">
+                    <el-input
+                      size="mini"
+                      type="number"
+                      :min="1"
+                      clearable
+                      v-model.number="record.properties.topicAliasMaximum"
+                    >
                     </el-input>
                   </el-form-item>
                 </el-col>
                 <el-col :span="2"></el-col>
                 <el-col :span="22">
                   <el-form-item :label="$t('connections.requestResponseInformation')" prop="requestResponseInformation">
-                    <el-radio-group v-model="record.properties.requestResponseInformation">
-                      <el-radio :label="true"></el-radio>
-                      <el-radio :label="false"></el-radio>
-                    </el-radio-group>
+                    <el-switch
+                      v-model="record.properties.requestResponseInformation"
+                      active-color="#13ce66"
+                      inactive-color="#A2A9B0"
+                    >
+                    </el-switch>
                   </el-form-item>
                 </el-col>
                 <el-col :span="2"></el-col>
                 <el-col :span="22">
                   <el-form-item :label="$t('connections.requestProblemInformation')" prop="requestProblemInformation">
-                    <el-radio-group v-model="record.properties.requestProblemInformation">
-                      <el-radio :label="true"></el-radio>
-                      <el-radio :label="false"></el-radio>
-                    </el-radio-group>
+                    <el-switch
+                      v-model="record.properties.requestProblemInformation"
+                      active-color="#13ce66"
+                      inactive-color="#A2A9B0"
+                    >
+                    </el-switch>
                   </el-form-item>
                 </el-col>
                 <el-col :span="2"></el-col>
@@ -414,10 +464,8 @@
               <el-col :span="2"></el-col>
               <el-col :span="22">
                 <el-form-item label-width="160px" :label="$t('connections.willRetain')" prop="will.lastWillRetain">
-                  <el-radio-group v-model="record.will.lastWillRetain">
-                    <el-radio :label="true"></el-radio>
-                    <el-radio :label="false"></el-radio>
-                  </el-radio-group>
+                  <el-switch v-model="record.will.lastWillRetain" active-color="#13ce66" inactive-color="#A2A9B0">
+                  </el-switch>
                 </el-form-item>
               </el-col>
               <el-col :span="2"></el-col>
@@ -456,10 +504,12 @@
                     :label="$t('connections.payloadFormatIndicator')"
                     prop="payloadFormatIndicator"
                   >
-                    <el-radio-group v-model="record.will.properties.payloadFormatIndicator">
-                      <el-radio :label="true"></el-radio>
-                      <el-radio :label="false"></el-radio>
-                    </el-radio-group>
+                    <el-switch
+                      v-model="record.will.properties.payloadFormatIndicator"
+                      active-color="#13ce66"
+                      inactive-color="#A2A9B0"
+                    >
+                    </el-switch>
                   </el-form-item>
                 </el-col>
                 <el-col :span="2"></el-col>
@@ -473,6 +523,7 @@
                       size="mini"
                       type="number"
                       :min="0"
+                      clearable
                       v-model.number="record.will.properties.willDelayInterval"
                     >
                     </el-input>
@@ -491,14 +542,15 @@
                       size="mini"
                       type="number"
                       :min="0"
+                      clearable
                       v-model.number="record.will.properties.messageExpiryInterval"
                     >
                     </el-input>
                   </el-form-item>
                 </el-col>
-                <el-col :span="2"
-                  ><div class="unit">({{ $t('common.unitS') }})</div></el-col
-                >
+                <el-col :span="2">
+                  <div class="unit">({{ $t('common.unitS') }})</div>
+                </el-col>
                 <el-col :span="22">
                   <el-form-item
                     class="content-type-item"
@@ -506,7 +558,7 @@
                     :label="$t('connections.contentType')"
                     prop="contentType"
                   >
-                    <el-input size="mini" v-model="record.will.properties.contentType"> </el-input>
+                    <el-input size="mini" clearable v-model="record.will.properties.contentType"> </el-input>
                   </el-form-item>
                 </el-col>
                 <el-col :span="2"></el-col>
@@ -517,7 +569,7 @@
                     :label="$t('connections.responseTopic')"
                     prop="responseTopic"
                   >
-                    <el-input size="mini" v-model="record.will.properties.responseTopic"> </el-input>
+                    <el-input size="mini" clearable v-model="record.will.properties.responseTopic"> </el-input>
                   </el-form-item>
                 </el-col>
                 <el-col :span="2"></el-col>
@@ -528,7 +580,7 @@
                     :label="$t('connections.correlationData')"
                     prop="correlationData"
                   >
-                    <el-input size="mini" v-model="record.will.properties.correlationData"> </el-input>
+                    <el-input size="mini" clearable v-model="record.will.properties.correlationData"> </el-input>
                   </el-form-item>
                 </el-col>
                 <el-col :span="2"></el-col>
@@ -553,6 +605,7 @@ import { getClientId } from '@/utils/idGenerator'
 import { getMQTTProtocol, getDefaultRecord } from '@/utils/mqttUtils'
 import Editor from '@/components/Editor.vue'
 import KeyValueEditor from '@/components/KeyValueEditor.vue'
+import { LeftValues } from '@/utils/styles'
 
 @Component({
   components: {
@@ -566,7 +619,7 @@ export default class ConnectionForm extends Vue {
   @Getter('advancedVisible') private getterAdvancedVisible!: boolean
   @Getter('willMessageVisible') private getterWillMessageVisible!: boolean
   @Getter('currentTheme') private theme!: Theme
-  @Getter('allConnections') private allConnections!: ConnectionModel[] | []
+  @Getter('showConnectionList') private showConnectionList!: boolean
 
   @Action('CHANGE_ACTIVE_CONNECTION') private changeActiveConnection!: (payload: Client) => void
   @Action('TOGGLE_ADVANCED_VISIBLE') private toggleAdvancedVisible!: (payload: { advancedVisible: boolean }) => void
@@ -588,7 +641,7 @@ export default class ConnectionForm extends Vue {
   private handleCreateNewConnection(val: string) {
     if (val === 'create') {
       // reinit the form when page jump to creation page
-      this.record = _.cloneDeep(this.defaultRecord)
+      this.initRecord()
     }
   }
 
@@ -602,17 +655,18 @@ export default class ConnectionForm extends Vue {
         { required: true, message: this.$t('common.inputRequired') },
         { validator: this.validateName, trigger: 'blur' },
       ],
-      clientId: [{ required: true, message: this.$t('common.inputRequired') }],
       path: [{ required: true, message: this.$t('common.inputRequired') }],
       host: [{ required: true, message: this.$t('common.inputRequired') }],
       port: [{ required: true, message: this.$t('common.inputRequired') }],
-      certType: [{ required: true, message: this.$t('common.selectRequired') }],
-      ca: [{ required: true, message: this.$t('common.inputRequired') }],
     }
   }
 
   get vueForm(): VueForm {
     return this.$refs.form as VueForm
+  }
+
+  get leftValue(): string {
+    return this.showConnectionList ? LeftValues.Show : LeftValues.Hide
   }
 
   private async loadDetail(id: string) {
@@ -625,52 +679,92 @@ export default class ConnectionForm extends Vue {
     }
   }
 
-  private async save() {
-    this.vueForm.validate(async (valid: boolean) => {
-      if (!valid) {
-        return false
-      }
-      const data = { ...this.record }
-      data.properties = emptyToNull(data.properties)
-      let res: ConnectionModel | undefined = undefined
-      const { connectionService } = useServices()
-      let msgError = ''
-      if (this.oper === 'create') {
-        // create a new connection
-        res = await connectionService.create({
+  private validateForm(): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      this.vueForm.validate((valid: boolean) => {
+        if (!valid) {
+          resolve(false)
+          return
+        }
+
+        const { ssl, certType, cert, key, ca } = this.record
+        // SSL File validation
+        if (ssl && certType === 'self') {
+          if (!cert && !key && !ca) {
+            this.$message.warning(this.$tc('connections.sslFileRequired'))
+            resolve(false)
+            return
+          }
+        }
+        resolve(true)
+      })
+    })
+  }
+
+  private async saveData() {
+    const { connectionService } = useServices()
+    const data = { ...this.record }
+    let res: ConnectionModel | undefined = undefined
+    data.properties = emptyToNull(data.properties)
+
+    if (this.oper === 'create') {
+      // create a new connection
+      res = await connectionService.create({
+        ...data,
+        createAt: time.getNowDate(),
+        updateAt: time.getNowDate(),
+      })
+      this.$log.info(`Created for the first time: ${res?.name}, ID: ${res?.id}`)
+    } else {
+      // update a exisit connection
+      if (data.id) {
+        res = await connectionService.update(data.id, {
           ...data,
-          createAt: time.getNowDate(),
           updateAt: time.getNowDate(),
         })
-        this.$log.info(`First time created, Name: ${res?.name}, ID: ${res?.id}`)
-        msgError = this.$tc('common.createfailed')
-      } else {
-        // update a exisit connection
-        if (data.id) {
-          res = await connectionService.updateWithCascade(data.id, {
-            ...data,
-            updateAt: time.getNowDate(),
-          })
-          this.$log.info(`${res?.name} was edited, ID: ${res?.id}`)
-          msgError = this.$tc('common.editfailed')
-        }
+        this.$log.info(`Connection ${res?.name} was edited, ID: ${res?.id}`)
       }
+    }
+    return res
+  }
+
+  private async handleSave(type: 'connect' | 'save') {
+    const valid = await this.validateForm()
+    if (!valid) {
+      return
+    }
+
+    const res = await this.saveData()
+    // Save failed
+    if (!(res && res.id)) {
+      const msgError = this.oper === 'create' ? this.$tc('common.createfailed') : this.$tc('common.editfailed')
+      this.$message.error(msgError)
+      this.$log.error(msgError)
+      return
+    }
+
+    if (type === 'save') {
+      const { id } = this.$route.params
+      this.$emit('refresh')
+      this.handleBack(id)
+      this.$message.success(this.$tc('common.saveSuccess'))
+    } else {
       // update ActiveConnection & connect
-      if (res && res.id) {
-        this.changeActiveConnection({
-          id: res.id,
-          client: {
-            connected: false,
-          },
-          messages: [],
-        })
-        this.$emit('connect')
-        this.$router.push(`/recent_connections/${res.id}`)
-      } else {
-        this.$message.error(msgError)
-        this.$log.error(msgError)
-      }
-    })
+      this.changeActiveConnection({
+        id: res.id,
+        client: {
+          connected: false,
+        },
+      })
+      this.$emit('connect')
+      this.$router.push(`/recent_connections/${res.id}`)
+    }
+  }
+
+  private handleActionCommand(command: 'save') {
+    if (command === 'save') {
+      this.handleSave('save')
+    }
   }
 
   private setClientID() {
@@ -696,13 +790,36 @@ export default class ConnectionForm extends Vue {
       })
   }
 
+  private handleProtocol(val: Protocol) {
+    if (['mqtts', 'wss'].includes(val)) {
+      this.record.ssl = true
+      this.handleSSL(true)
+    } else {
+      this.record.ssl = false
+      this.handleSSL(false)
+    }
+  }
+
   private handleSSL(val: boolean) {
     const { protocol } = this.record
     if (protocol) {
-      this.changeProtocol(protocol as Protocol, val)
+      this.changeProtocol(protocol, val)
       if (!val) {
         this.record.certType = ''
+      } else {
+        this.record.certType = 'server'
       }
+    }
+  }
+
+  private handleClean(val: boolean) {
+    if (this.record.mqttVersion !== '5.0') {
+      return
+    }
+    if (val && this.record.properties) {
+      this.$set(this.record.properties, 'sessionExpiryInterval', 0)
+    } else if (!val && this.record.properties) {
+      this.$set(this.record.properties, 'sessionExpiryInterval', 7200)
     }
   }
 
@@ -740,16 +857,18 @@ export default class ConnectionForm extends Vue {
   }
 
   private async validateName(rule: FormRule, name: string, callBack: NameCallBack) {
-    for (const connection of this.allConnections) {
+    const { connectionService } = useServices()
+    const connections = (await connectionService.getAll()) ?? []
+    for (const connection of connections) {
       if (this.oper === 'create' && connection.name === name) {
-        callBack(`${this.$t('connections.duplicateName')}`)
+        callBack(this.$tc('connections.duplicateName'))
       } else if (this.oper === 'edit' && name !== this.oldName && connection.name === name) {
-        callBack(`${this.$t('connections.duplicateName')}`)
+        callBack(this.$tc('connections.duplicateName'))
       }
     }
   }
 
-  private async loadData(reload: boolean = false): Promise<void> {
+  private async loadSuggestConnections(reload: boolean = false): Promise<void> {
     const { connectionService } = useServices()
     const res: ConnectionModel[] | undefined = await connectionService.getLeatests()
     if (res) {
@@ -781,12 +900,18 @@ export default class ConnectionForm extends Vue {
     }
   }
 
-  private async created() {
-    await this.loadData()
+  private initRecord() {
     const { id } = this.$route.params
-    if (this.oper === 'edit' && id !== '0') {
+    if (this.oper === 'create') {
+      this.record = _.cloneDeep(this.defaultRecord)
+    } else if (this.oper === 'edit' && id !== '0') {
       this.loadDetail(id)
     }
+  }
+
+  private async created() {
+    await this.loadSuggestConnections()
+    this.initRecord()
     this.advancedVisible = this.getterAdvancedVisible
     this.willMessageVisible = this.getterWillMessageVisible
   }
@@ -800,6 +925,14 @@ export default class ConnectionForm extends Vue {
   padding: 0 16px;
   .topbar {
     -webkit-app-region: drag;
+    .tail {
+      a {
+        padding: 0 12px;
+      }
+      .connect-btn {
+        border-right: 1px solid var(--color-border-default);
+      }
+    }
   }
   .el-form {
     padding-top: 80px;
