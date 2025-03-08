@@ -182,13 +182,12 @@
 
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator'
-import { ipcRenderer } from 'electron'
 import { Getter } from 'vuex-class'
 import Editor from '@/components/Editor.vue'
 import MyDialog from '@/components/MyDialog.vue'
 import useServers from '@/database/useServices'
 import ImportScript from '@/components/ImportScript.vue'
-import Copilot from '@/components/Copilot.vue'
+import Copilot from '@/components/ai/Copilot.vue'
 import { scriptTest } from '@/utils/scriptTest'
 
 @Component({
@@ -596,19 +595,6 @@ message Person {
     const copilotRef = this.getAncestorRef('copilot') as Copilot
     copilotRef.showCopilot = show
     return copilotRef
-  }
-
-  private mounted() {
-    ipcRenderer.on('insertCodeToEditor', (event: Event, code: string) => {
-      if (code) {
-        this.functionEditorValue = code
-        this.toggleShowCopilot(false)
-      }
-    })
-  }
-
-  private beforeDestroy() {
-    ipcRenderer.removeAllListeners('insertCodeToEditor')
   }
 }
 </script>
